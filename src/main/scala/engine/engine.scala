@@ -49,7 +49,9 @@ final class Task(taskDef: TaskDefinition) extends TreeNode {
 final class Workflow(workflowDef: WorkflowDefinition) {
   val tasks = mutable.ListBuffer.empty[Task]
   def start = ???
-  def execute = ???
+  def execute = {
+
+  }
 }
 
 abstract class Service
@@ -57,8 +59,15 @@ object CacheService extends Service
 
 object Engine {
   val _workflows = mutable.ListBuffer.empty[Workflow]
-  def startWorkflow(workflowDef: WorkflowDefinition) = ???
-  def executeRound = ???
+  def startWorkflow(workflowDef: WorkflowDefinition) = {
+    _workflows += new Workflow(workflowDef)
+  }
+  def executeRound = {
+    for {
+      wf <- _workflows
+
+    }
+  }
 }
 
 

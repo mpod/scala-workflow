@@ -1,2 +1,4 @@
-# scala-workflow
+# scala-workflow #
+
+My Scala playground
 
