@@ -41,16 +41,26 @@ object TaskState extends Enumeration {
   val New, Done, Running = Value
 }
 
-final class Task(taskDef: TaskDefinition) extends TreeNode {
-  var state: TaskState.Value = TaskState.Running
-  def execute = ???
+final class Task(taskDef: TaskDefinition, workflow: Workflow) extends TreeNode {
+  private var _state: TaskState.Value = TaskState.New
+  def execute: Unit = {
+    _state = TaskState.Running
+  }
 }
 
-final class Workflow(workflowDef: WorkflowDefinition) {
-  val tasks = mutable.ListBuffer.empty[Task]
-  def start = ???
-  def execute = {
+final class Workflow(workflowDef: WorkflowDefinition, parent: Option[Workflow]) {
+  private val _tasks = mutable.ListBuffer.empty[Task]
 
+  def this(workflowDef: WorkflowDefinition) = this(workflowDef, None)
+
+  def start: Task = {
+    val task = new Task(workflowDef.start, this)
+    _tasks += task
+    task
+  }
+
+  def executeRound: Unit = {
+    _tasks foreach (t => t.execute)
   }
 }
 
@@ -59,14 +69,13 @@ object CacheService extends Service
 
 object Engine {
   val _workflows = mutable.ListBuffer.empty[Workflow]
-  def startWorkflow(workflowDef: WorkflowDefinition) = {
-    _workflows += new Workflow(workflowDef)
+  def startWorkflow(workflowDef: WorkflowDefinition): Workflow = {
+    val wf = new Workflow(workflowDef)
+    _workflows += wf
+    wf
   }
   def executeRound = {
-    for {
-      wf <- _workflows
-
-    }
+    _workflows foreach (wf => wf.executeRound)
   }
 }
 
