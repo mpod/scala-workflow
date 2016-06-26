@@ -41,11 +41,17 @@ object TaskState extends Enumeration {
   val New, Done, Running = Value
 }
 
-final class Task(taskDef: TaskDefinition, workflow: Workflow) extends TreeNode {
+final class Task(val taskDef: TaskDefinition, workflow: Workflow) extends TreeNode {
   private var _state: TaskState.Value = TaskState.New
-  def execute: Unit = {
+
+  def execute: Option[ActionResult] = {
     _state = TaskState.Running
+    val r = taskDef.action
+    if (r.isDefined) _state = TaskState.Done
+    r
   }
+
+  def isExecuted(): Boolean = Set(TaskState.Done) contains _state
 }
 
 final class Workflow(workflowDef: WorkflowDefinition, parent: Option[Workflow]) {
@@ -59,8 +65,16 @@ final class Workflow(workflowDef: WorkflowDefinition, parent: Option[Workflow]) 
     task
   }
 
-  def executeRound: Unit = {
-    _tasks foreach (t => t.execute)
+  def executeRound: Seq[Task] = {
+    for {
+      t <- _tasks
+      if !t.isExecuted()
+      r <- t.execute
+      tDefs <- workflowDef.transitions.get((t.taskDef, r))
+      tDef <- tDefs
+      nt = new Task(tDef, this)
+      t.addChild(nt)
+    } yield nt
   }
 }
 
