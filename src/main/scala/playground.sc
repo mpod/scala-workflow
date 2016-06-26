@@ -38,4 +38,6 @@ class Service
 
 new Service
 
+Range(1, 5)
+
 

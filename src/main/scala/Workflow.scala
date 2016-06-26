@@ -1,13 +1,13 @@
-import engine.Task
+import engine._
+import definitions._
 
 object Workflow {
   def main(args: Array[String]): Unit = {
-    val a = Task("a")
-    val b = Task("b")
-    val c = Task("c")
+    Engine.startWorkflow(RandomWorkflow)
 
-    a.addChild(b)
-    a.addChild(c)
-    println(a)
+    for (i <- 1 to 10) {
+      println("Iteration " + i)
+      Engine.executeRound
+    }
   }
 }

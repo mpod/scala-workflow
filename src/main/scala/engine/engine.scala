@@ -73,7 +73,7 @@ final class Workflow(workflowDef: WorkflowDefinition, parent: Option[Workflow]) 
     tDefs <- workflowDef.transitions.get((t.taskDef, r))
     tDef <- tDefs
     nt = new Task(tDef, this)
-    t.addChild(nt)
+    dummy = t.addChild(nt)
   } yield nt
 
   def isExecuted: Boolean = _tasks forall (t => t.isExecuted)
@@ -96,7 +96,7 @@ object Engine {
   def executeRound: Seq[Workflow] = for {
     wf <- _workflows
     if !wf.isExecuted
-    wf.executeRound
+    dummy = wf.executeRound
   } yield wf
 }
 
