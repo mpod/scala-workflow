@@ -51,7 +51,7 @@ final class Task(val taskDef: TaskDefinition, workflow: Workflow) extends TreeNo
     r
   }
 
-  def isExecuted(): Boolean = Set(TaskState.Done) contains _state
+  def isExecuted: Boolean = Set(TaskState.Done) contains _state
 }
 
 final class Workflow(workflowDef: WorkflowDefinition, parent: Option[Workflow]) {
@@ -65,32 +65,38 @@ final class Workflow(workflowDef: WorkflowDefinition, parent: Option[Workflow]) 
     task
   }
 
-  def executeRound: Seq[Task] = {
-    for {
-      t <- _tasks
-      if !t.isExecuted()
-      r <- t.execute
-      tDefs <- workflowDef.transitions.get((t.taskDef, r))
-      tDef <- tDefs
-      nt = new Task(tDef, this)
-      t.addChild(nt)
-    } yield nt
-  }
+  def executeRound: Seq[Task] = for {
+    t <- _tasks
+    if !t.isExecuted
+    r <- t.execute
+    tDefs <- workflowDef.transitions.get((t.taskDef, r))
+    tDef <- tDefs
+    nt = new Task(tDef, this)
+    t.addChild(nt)
+  } yield nt
+
+  def isExecuted: Boolean = _tasks forall (t => t.isExecuted)
 }
 
 abstract class Service
+
 object CacheService extends Service
+object EngineService extends Service
 
 object Engine {
   val _workflows = mutable.ListBuffer.empty[Workflow]
+
   def startWorkflow(workflowDef: WorkflowDefinition): Workflow = {
     val wf = new Workflow(workflowDef)
     _workflows += wf
     wf
   }
-  def executeRound = {
-    _workflows foreach (wf => wf.executeRound)
-  }
+
+  def executeRound: Seq[Workflow] = for {
+    wf <- _workflows
+    if !wf.isExecuted
+    wf.executeRound
+  } yield wf
 }
 
 
