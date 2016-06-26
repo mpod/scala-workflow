@@ -22,7 +22,7 @@ trait TreeNode {
 }
 
 abstract class ActionResult
-case object Done extends ActionResult
+case object Ok extends ActionResult
 case object Yes extends ActionResult
 case object No extends ActionResult
 
@@ -32,6 +32,7 @@ abstract class TaskDefinition {
 }
 
 abstract class WorkflowDefinition {
+  val taskDefinitions: List[TaskDefinition]
   val start: TaskDefinition
   val end: List[TaskDefinition]
   val transitions: Map[(TaskDefinition, ActionResult), List[TaskDefinition]]
