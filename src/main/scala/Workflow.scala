@@ -7,7 +7,7 @@ object Workflow {
 
     for (i <- 1 to 10) {
       println("Iteration " + i)
-      Engine.executeRound
+      println(Engine.executeRound)
     }
   }
 }

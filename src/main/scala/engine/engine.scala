@@ -48,7 +48,9 @@ final class Task(val taskDef: TaskDefinition, workflow: Workflow) extends TreeNo
   def execute: Option[ActionResult] = {
     _state = TaskState.Running
     val r = taskDef.action
-    if (r.isDefined) _state = TaskState.Done
+    if (r.isDefined) {
+      _state = TaskState.Done
+    }
     r
   }
 
@@ -78,6 +80,7 @@ final class Workflow(workflowDef: WorkflowDefinition, parent: Option[Workflow]) 
         _ = t.addChild(nt)
       } yield nt
     } yield newTasks
+    println(tasks)
     tasks.toList.flatten
   }
 
@@ -94,6 +97,7 @@ object Engine {
 
   def startWorkflow(workflowDef: WorkflowDefinition): Workflow = {
     val wf = new Workflow(workflowDef)
+    wf.start
     _workflows += wf
     wf
   }
