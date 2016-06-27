@@ -40,4 +40,14 @@ new Service
 
 Range(1, 5)
 
+val d = Some(List(1,2,3))
+val d2 = Some(List("a", "b"))
+
+Option(List(1,2,3))
+
+for {
+  d1 <- d
+  d3 <- d2
+} yield d3
+
 

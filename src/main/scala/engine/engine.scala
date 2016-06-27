@@ -66,15 +66,20 @@ final class Workflow(workflowDef: WorkflowDefinition, parent: Option[Workflow]) 
     task
   }
 
-  def executeRound: Seq[Task] = for {
-    t <- _tasks
-    if !t.isExecuted
-    r <- t.execute
-    tDefs <- workflowDef.transitions.get((t.taskDef, r))
-    tDef <- tDefs
-    nt = new Task(tDef, this)
-    dummy = t.addChild(nt)
-  } yield nt
+  def executeRound: List[Task] = {
+    val tasks: mutable.ListBuffer[List[Task]] = for {
+      t <- _tasks
+      if !t.isExecuted
+      r <- t.execute
+      tDefs <- workflowDef.transitions.get((t.taskDef, r))
+      newTasks = for {
+        tDef <- tDefs
+        nt = new Task(tDef, this)
+        _ = t.addChild(nt)
+      } yield nt
+    } yield newTasks
+    tasks.toList.flatten
+  }
 
   def isExecuted: Boolean = _tasks forall (t => t.isExecuted)
 }
