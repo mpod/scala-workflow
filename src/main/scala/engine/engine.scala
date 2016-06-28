@@ -55,6 +55,8 @@ final class Task(val taskDef: TaskDefinition, workflow: Workflow) extends TreeNo
   }
 
   def isExecuted: Boolean = Set(TaskState.Done) contains _state
+
+  override def toString = taskDef.name
 }
 
 final class Workflow(workflowDef: WorkflowDefinition, parent: Option[Workflow]) {
@@ -65,11 +67,12 @@ final class Workflow(workflowDef: WorkflowDefinition, parent: Option[Workflow]) 
   def start: Task = {
     val task = new Task(workflowDef.start, this)
     _tasks += task
+    println("Started workflow with task: " + task)
     task
   }
 
   def executeRound: List[Task] = {
-    val tasks: mutable.ListBuffer[List[Task]] = for {
+    val newTasksHelper: mutable.ListBuffer[List[Task]] = for {
       t <- _tasks
       if !t.isExecuted
       r <- t.execute
@@ -80,8 +83,10 @@ final class Workflow(workflowDef: WorkflowDefinition, parent: Option[Workflow]) 
         _ = t.addChild(nt)
       } yield nt
     } yield newTasks
-    println(tasks)
-    tasks.toList.flatten
+    val newTasks = newTasksHelper.toList.flatten
+    newTasks foreach (x => _tasks += x)
+    println("Created new tasks: " + newTasks)
+    newTasks
   }
 
   def isExecuted: Boolean = _tasks forall (t => t.isExecuted)
