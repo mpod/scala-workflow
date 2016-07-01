@@ -95,20 +95,32 @@ final class Workflow(workflowDef: WorkflowDefinition, parent: Option[Workflow]) 
 abstract class Service
 
 object WorkflowCacheService extends Service {
-  private var _intBag: Map[Workflow, Map[String, Int]] = Map()
-  private var _stringBag: Map[Workflow, Map[String, String]] = Map()
+  private var _intBag: Map[Workflow, mutable.Map[String, Int]] = Map()
+  private var _stringBag: Map[Workflow, mutable.Map[String, String]] = Map()
 
-  def putInt(wf: Workflow, name: String, value: Int): Unit = {
+  private def checkName(name: String): Boolean = {
+    val r = for {
+      bag <- List(_intBag, _stringBag)
+      wfMap <- bag.values
+      keyName <- wfMap.keys
+      if name == keyName
+    } yield name
+    r.isEmpty
+  }
+
+  def put(wf: Workflow, name: String, value: Int): Unit = {
+    require(checkName(name))
     _intBag.get(wf) match {
-      case None => _intBag += (wf -> Map(name -> value))
-      case Some(x) => _intBag += (wf -> (x += (name -> value)))
+      case None => _intBag += (wf -> mutable.Map(name -> value))
+      case Some(x) => x += (name -> value)
     }
   }
 
-  def putString(wf: Workflow, name: String, value: String): Unit = {
+  def put(wf: Workflow, name: String, value: String): Unit = {
+    require(checkName(name))
     _stringBag.get(wf) match {
-      case None => _stringBag += (wf -> Map(name -> value))
-      case Some(x) => _stringBag += (wf -> (x += (name -> value)))
+      case None => _stringBag += (wf -> mutable.Map(name -> value))
+      case Some(x) => x += (name -> value)
     }
   }
 
@@ -139,9 +151,5 @@ object Engine {
     dummy = wf.executeRound
   } yield wf
 }
-
-
-
-
 
 
