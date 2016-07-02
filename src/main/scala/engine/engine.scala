@@ -25,6 +25,7 @@ abstract class ActionResult
 case object Ok extends ActionResult
 case object Yes extends ActionResult
 case object No extends ActionResult
+case object Wait extends ActionResult
 
 abstract class TaskDefinition {
   def action: Option[ActionResult]
@@ -59,10 +60,41 @@ final class Task(val taskDef: TaskDefinition, workflow: Workflow) extends TreeNo
   override def toString = taskDef.name
 }
 
+class SubWorkflowTaskDef(wfDef: WorkflowDefinition) extends TaskDefinition {
+  var wf: Option[Workflow] = None
+
+  override def action: Option[ActionResult] = wf match {
+    case None => wf = Some(EngineService.startWorkflow(wfDef)); None
+    case Some(wf) => if (wf.isExecuted) Some(Ok) else None
+  }
+
+  override def name: String = "SubWorkflow Task"
+}
+
+class NoOpTaskDef extends TaskDefinition {
+  override def action: Option[ActionResult] = Some(Ok)
+
+  override def name: String = "NoOp"
+}
+
+class JoinTaskDef(n: Int) extends TaskDefinition {
+  var inputLines = n
+
+  override def action: Option[ActionResult] = {
+    n -= 1
+    if (n <= 0)
+      Some(Ok)
+    else
+      Some(Wait)
+  }
+
+  override def name: String = "Join"
+}
+
 final class Workflow(workflowDef: WorkflowDefinition, parent: Option[Workflow]) {
   private val _tasks = mutable.ListBuffer.empty[Task]
 
-  def this(workflowDef: WorkflowDefinition) = this(workflowDef, None)
+  def this(wfDef: WorkflowDefinition) = this(wfDef, None)
 
   def start: Task = {
     val task = new Task(workflowDef.start, this)
@@ -133,13 +165,19 @@ object WorkflowCacheService extends Service {
   }
 }
 
-object EngineService extends Service
+object EngineService extends Service {
+  def startWorkflow(wfDef: WorkflowDefinition): Workflow = Engine.startWorkflow(wfDef)
+}
 
 object Engine {
   val _workflows = mutable.ListBuffer.empty[Workflow]
 
-  def startWorkflow(workflowDef: WorkflowDefinition): Workflow = {
-    val wf = new Workflow(workflowDef)
+  def startWorkflow(wfDef: WorkflowDefinition): Workflow = {
+    startWorkflow(wfDef, None)
+  }
+
+  def startWorkflow(wfDef: WorkflowDefinition, parentWf: Option[Workflow]): Workflow = {
+    val wf = new Workflow(wfDef, parentWf)
     wf.start
     _workflows += wf
     wf
