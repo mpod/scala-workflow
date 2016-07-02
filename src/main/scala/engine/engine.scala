@@ -4,7 +4,7 @@ import scala.collection.mutable
 
 trait TreeNode {
   private var _parent: Option[TreeNode] = None
-  private val _children = mutable.ListBuffer.empty[TreeNode]
+  private var _children: List[TreeNode] = List()
 
   def parent = _parent
   def children = _children
@@ -12,12 +12,14 @@ trait TreeNode {
   def addChild(node: TreeNode): Unit = {
     require(node.parent.isEmpty)
     node._parent = Some(this)
-    children += node
+    _children = node :: _children
   }
 
-  def createString(value: String) = {
-    val childrenStr = if (children.isEmpty) "" else " [" + children.map(_.toString).mkString(", ") + "]"
-    "(" + value + childrenStr + ")"
+  def valueToString: String
+
+  override def toString = {
+    val childrenStr = if (children.isEmpty) "" else " [\n" + children.map(_.toString).mkString("\n") + "\n]"
+    "(" + valueToString + childrenStr + ")"
   }
 }
 
@@ -25,7 +27,6 @@ abstract class ActionResult
 case object Ok extends ActionResult
 case object Yes extends ActionResult
 case object No extends ActionResult
-case object Wait extends ActionResult
 
 abstract class TaskDefinition {
   def action: Option[ActionResult]
@@ -37,6 +38,7 @@ abstract class WorkflowDefinition {
   val start: TaskDefinition
   val end: List[TaskDefinition]
   val transitions: Map[(TaskDefinition, ActionResult), List[TaskDefinition]]
+  val name: String
 }
 
 object TaskState extends Enumeration {
@@ -58,34 +60,46 @@ final class Task(val taskDef: TaskDefinition, workflow: Workflow) extends TreeNo
   def isExecuted: Boolean = Set(TaskState.Done) contains _state
 
   override def toString = taskDef.name
+
+  override def valueToString: String = taskDef.name
 }
 
-class SubWorkflowTaskDef(wfDef: WorkflowDefinition) extends TaskDefinition {
+class SubWorkflowTaskDefinition(wfDef: WorkflowDefinition) extends TaskDefinition {
   var wf: Option[Workflow] = None
 
   override def action: Option[ActionResult] = wf match {
     case None => wf = Some(EngineService.startWorkflow(wfDef)); None
-    case Some(wf) => if (wf.isExecuted) Some(Ok) else None
+    case Some(x) => if (x.isExecuted) Some(Ok) else None
   }
 
-  override def name: String = "SubWorkflow Task"
+  override def name: String = "SubWorkflow[%s]".format(wfDef.name)
 }
 
-class NoOpTaskDef extends TaskDefinition {
+class SplitTaskDefinition extends TaskDefinition {
   override def action: Option[ActionResult] = Some(Ok)
 
-  override def name: String = "NoOp"
+  override def name: String = "Split"
 }
 
-class JoinTaskDef(n: Int) extends TaskDefinition {
+object StartTaskDefinition extends TaskDefinition {
+  override def action: Option[ActionResult] = Option(Ok)
+  override def name: String = "Start"
+}
+
+object EndTaskDefinition extends TaskDefinition {
+  override def action: Option[ActionResult] = Option(Ok)
+  override def name: String = "End"
+}
+
+class JoinTaskDefinition(n: Int) extends TaskDefinition {
   var inputLines = n
 
   override def action: Option[ActionResult] = {
-    n -= 1
-    if (n <= 0)
+    inputLines -= 1
+    if (inputLines == 0)
       Some(Ok)
     else
-      Some(Wait)
+      None
   }
 
   override def name: String = "Join"
