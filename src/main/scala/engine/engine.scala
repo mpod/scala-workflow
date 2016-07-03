@@ -27,7 +27,7 @@ abstract class ActionResult
 case object Ok extends ActionResult
 case object Yes extends ActionResult
 case object No extends ActionResult
-case object JoinUncomplete extends ActionResult
+case object JoinIsWaiting extends ActionResult
 
 abstract class TaskDefinition {
   def action: Option[ActionResult]
@@ -50,6 +50,7 @@ final class Task(val taskDef: TaskDefinition, workflow: Workflow) extends TreeNo
     _state = TaskState.Running
     val r = taskDef.action
     if (r.isDefined) {
+      println("Executed task \"%s\"".format(taskDef.name))
       _state = TaskState.Done
     }
     r
@@ -72,7 +73,7 @@ class SubWorkflowTaskDefinition(wfDef: WorkflowDefinition) extends TaskDefinitio
   var wf: Option[Workflow] = None
 
   override def action: Option[ActionResult] = wf match {
-    case None => wf = Some(EngineService.startWorkflow(wfDef)); None
+    case None => wf = Some(Engine.startWorkflow(wfDef)); None
     case Some(x) => if (x.endExecuted) Some(Ok) else None
   }
 
@@ -107,7 +108,7 @@ class JoinTaskDefinition(n: Int) extends TaskDefinition {
     if (inputLines == 0)
       Some(Ok)
     else
-      None
+      Some(JoinIsWaiting)
   }
 
   override def name: String = "Join"

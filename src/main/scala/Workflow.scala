@@ -3,11 +3,13 @@ import definitions._
 
 object Workflow {
   def main(args: Array[String]): Unit = {
-    Engine.startWorkflow(RandomWorkflow)
+    val wf = Engine.startWorkflow(ExampleWorkflow)
+    var i = 1
 
-    for (i <- 1 to 10) {
-      println("Iteration " + i)
+    while (!wf.allExecuted) {
+      println("Iteration %d".format(i))
       Engine.executeRound
+      i += 1
     }
   }
 }

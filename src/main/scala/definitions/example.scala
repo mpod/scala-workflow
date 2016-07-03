@@ -17,7 +17,8 @@ class WaitTaskDefinition(n: Int) extends TaskDefinition {
 }
 
 object ExampleWorkflow extends WorkflowDefinition {
-  val branch = new BranchTaskDefinition(() => new Random().nextBoolean)
+  //val branch = new BranchTaskDefinition(() => new Random().nextBoolean)
+  val branch = new BranchTaskDefinition(() => false)
   val split = new SplitTaskDefinition()
   val wait2 = new WaitTaskDefinition(2)
   val wait3 = new WaitTaskDefinition(3)
@@ -27,7 +28,7 @@ object ExampleWorkflow extends WorkflowDefinition {
   override val transitions: Map[(TaskDefinition, ActionResult), List[TaskDefinition]] = Map(
     (StartTaskDefinition, Ok) -> List(branch),
     (branch, Yes) -> List(split),
-    (split, Ok) -> List(subWf),
+    (branch, No) -> List(subWf),
     (subWf, Ok) -> List(EndTaskDefinition),
     (split, Ok) -> List(wait2, wait3),
     (wait2, Ok) -> List(join),
