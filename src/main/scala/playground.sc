@@ -55,3 +55,10 @@ val e = Map(2->3, 4->5)
 e.get(2)
 
 Stream.from(1).head
+
+"aaa".getClass
+
+new java.lang.String("222")
+
+
+

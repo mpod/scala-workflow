@@ -23,6 +23,42 @@ trait TreeNode {
   }
 }
 
+trait Cache {
+  private var _intCache: Map[String, Int] = Map()
+  private var _stringCache: Map[String, String] = Map()
+
+  object ValueType extends Enumeration {
+    val String, Int = Value
+  }
+
+  private def checkName(name: String, valueType: ValueType.Value): Boolean = {
+    if (valueType != ValueType.String && _stringCache.contains(name))
+      false
+    else if (valueType != ValueType.Int && _intCache.contains(name))
+      false
+    else
+      true
+  }
+
+  def setIntVal(name: String, value: Int): Unit = {
+    require(checkName(name, ValueType.Int))
+    _intCache += (name -> value)
+  }
+
+  def setStringVal(name: String, value: String): Unit = {
+    require(checkName(name, ValueType.String))
+    _stringCache += (name -> value)
+  }
+
+  def getIntVal(name: String): Int = {
+    _intCache(name)
+  }
+
+  def getStringVal(name: String): String = {
+    _stringCache(name)
+  }
+}
+
 abstract class ActionResult
 case object Ok extends ActionResult
 case object Yes extends ActionResult
@@ -156,49 +192,6 @@ final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow]) {
 }
 
 abstract class Service
-
-object WorkflowCacheService extends Service {
-  private var _intBag: Map[Workflow, mutable.Map[String, Int]] = Map()
-  private var _stringBag: Map[Workflow, mutable.Map[String, String]] = Map()
-
-  private def checkName(name: String): Boolean = {
-    val r = for {
-      bag <- List(_intBag, _stringBag)
-      wfMap <- bag.values
-      keyName <- wfMap.keys
-      if name == keyName
-    } yield name
-    r.isEmpty
-  }
-
-  def put(wf: Workflow, name: String, value: Int): Unit = {
-    require(checkName(name))
-    _intBag.get(wf) match {
-      case None => _intBag += (wf -> mutable.Map(name -> value))
-      case Some(x) => x += (name -> value)
-    }
-  }
-
-  def put(wf: Workflow, name: String, value: String): Unit = {
-    require(checkName(name))
-    _stringBag.get(wf) match {
-      case None => _stringBag += (wf -> mutable.Map(name -> value))
-      case Some(x) => x += (name -> value)
-    }
-  }
-
-  def getInt(wf: Workflow, name: String): Int = {
-    _intBag.get(wf).get(name)
-  }
-
-  def getString(wf: Workflow, name: String): String = {
-    _stringBag.get(wf).get(name)
-  }
-}
-
-object EngineService extends Service {
-  def startWorkflow(wfDef: WorkflowDefinition): Workflow = Engine.startWorkflow(wfDef)
-}
 
 object Engine {
   val _workflows = mutable.ListBuffer.empty[Workflow]
