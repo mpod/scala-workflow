@@ -27,6 +27,7 @@ abstract class ActionResult
 case object Ok extends ActionResult
 case object Yes extends ActionResult
 case object No extends ActionResult
+case object JoinUncomplete extends ActionResult
 
 abstract class TaskDefinition {
   def action: Option[ActionResult]
@@ -34,9 +35,6 @@ abstract class TaskDefinition {
 }
 
 abstract class WorkflowDefinition {
-  val taskDefinitions: List[TaskDefinition]
-  val start: TaskDefinition
-  val end: List[TaskDefinition]
   val transitions: Map[(TaskDefinition, ActionResult), List[TaskDefinition]]
   val name: String
 }
@@ -58,10 +56,16 @@ final class Task(val taskDef: TaskDefinition, workflow: Workflow) extends TreeNo
   }
 
   def isExecuted: Boolean = Set(TaskState.Done) contains _state
-
   override def toString = taskDef.name
-
   override def valueToString: String = taskDef.name
+}
+
+class ProcessTaskDefinition(f: () => Unit) extends TaskDefinition {
+  override def action: Option[ActionResult] = {
+    f()
+    Some(Ok)
+  }
+  override def name: String = "Process"
 }
 
 class SubWorkflowTaskDefinition(wfDef: WorkflowDefinition) extends TaskDefinition {
@@ -69,15 +73,19 @@ class SubWorkflowTaskDefinition(wfDef: WorkflowDefinition) extends TaskDefinitio
 
   override def action: Option[ActionResult] = wf match {
     case None => wf = Some(EngineService.startWorkflow(wfDef)); None
-    case Some(x) => if (x.isExecuted) Some(Ok) else None
+    case Some(x) => if (x.endExecuted) Some(Ok) else None
   }
 
   override def name: String = "SubWorkflow[%s]".format(wfDef.name)
 }
 
+class BranchTaskDefinition(f: () => Boolean) extends TaskDefinition {
+  override def action: Option[ActionResult] = if (f()) Some(Yes) else Some(No)
+  override def name: String = "Branch"
+}
+
 class SplitTaskDefinition extends TaskDefinition {
   override def action: Option[ActionResult] = Some(Ok)
-
   override def name: String = "Split"
 }
 
@@ -105,15 +113,16 @@ class JoinTaskDefinition(n: Int) extends TaskDefinition {
   override def name: String = "Join"
 }
 
-final class Workflow(workflowDef: WorkflowDefinition, parent: Option[Workflow]) {
+final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow]) {
   private val _tasks = mutable.ListBuffer.empty[Task]
 
   def this(wfDef: WorkflowDefinition) = this(wfDef, None)
 
   def start: Task = {
-    val task = new Task(workflowDef.start, this)
+    val task = new Task(StartTaskDefinition, this)
     _tasks += task
-    println("Started workflow with task: " + task)
+    println("Started workflow \"%s\"".format(wfDef.name))
+    println("Created task \"%s\"".format(task))
     task
   }
 
@@ -122,7 +131,7 @@ final class Workflow(workflowDef: WorkflowDefinition, parent: Option[Workflow]) 
       t <- _tasks
       if !t.isExecuted
       r <- t.execute
-      tDefs <- workflowDef.transitions.get((t.taskDef, r))
+      tDefs <- wfDef.transitions.get((t.taskDef, r))
       newTasks = for {
         tDef <- tDefs
         nt = new Task(tDef, this)
@@ -130,12 +139,16 @@ final class Workflow(workflowDef: WorkflowDefinition, parent: Option[Workflow]) 
       } yield nt
     } yield newTasks
     val newTasks = newTasksHelper.toList.flatten
-    newTasks foreach (x => _tasks += x)
-    println("Created new tasks: " + newTasks)
+    newTasks foreach (t => _tasks += t)
+    newTasks foreach (t => println("Created task \"%s\"".format(t)))
     newTasks
   }
 
-  def isExecuted: Boolean = _tasks forall (t => t.isExecuted)
+  def isStarted: Boolean = _tasks.nonEmpty
+
+  def allExecuted: Boolean = isStarted && (_tasks forall (t => t.isExecuted))
+
+  def endExecuted: Boolean = isStarted && (_tasks exists (t => t.taskDef == EndTaskDefinition && t.isExecuted))
 }
 
 abstract class Service
@@ -199,7 +212,7 @@ object Engine {
 
   def executeRound: Seq[Workflow] = for {
     wf <- _workflows
-    if !wf.isExecuted
+    if !wf.allExecuted
     dummy = wf.executeRound
   } yield wf
 }
