@@ -20,11 +20,6 @@ object RandomTaskB extends TaskDefinition {
 }
 
 object RandomWorkflow extends WorkflowDefinition {
-  override val taskDefinitions: List[TaskDefinition] = List(
-    StartTaskDefinition, EndTaskDefinition, RandomIf, RandomTaskA, RandomTaskB
-  )
-  override val start: TaskDefinition = StartTaskDefinition
-  override val end: List[TaskDefinition] = List(EndTaskDefinition)
   override val transitions: Map[(TaskDefinition, ActionResult), List[TaskDefinition]] = Map(
     (StartTaskDefinition, Ok) -> List(RandomIf),
     (RandomIf, Yes) -> List(RandomTaskA),

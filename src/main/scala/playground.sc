@@ -54,9 +54,4 @@ val e = Map(2->3, 4->5)
 
 e.get(2)
 
-e(6)
-
-e + (5->6)
-
-e
-
+Stream.from(1).head
