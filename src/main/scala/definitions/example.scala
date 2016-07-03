@@ -17,8 +17,7 @@ class WaitTaskDefinition(n: Int) extends TaskDefinition {
 }
 
 object ExampleWorkflow extends WorkflowDefinition {
-  //val branch = new BranchTaskDefinition(() => new Random().nextBoolean)
-  val branch = new BranchTaskDefinition(() => false)
+  val branch = new BranchTaskDefinition(() => new Random().nextBoolean)
   val split = new SplitTaskDefinition()
   val wait2 = new WaitTaskDefinition(2)
   val wait3 = new WaitTaskDefinition(3)
