@@ -48,6 +48,8 @@ object TaskState extends Enumeration {
 final class Task(val taskDef: TaskDefinition, val workflow: Workflow) extends TreeNode {
   private var _state: TaskState.Value = TaskState.New
 
+  println("Created task \"%s\"".format(this))
+
   def execute: Option[ActionResult] = {
     _state = TaskState.Running
     val context = new TaskActionContext(this)
@@ -126,7 +128,6 @@ final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow]) {
     val task = new Task(StartTaskDefinition, this)
     _tasks += task
     println("Started workflow \"%s\"".format(wfDef.name))
-    println("Created task \"%s\"".format(task))
     task
   }
 
@@ -144,7 +145,6 @@ final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow]) {
     } yield newTasks
     val newTasks = newTasksHelper.toList.flatten
     newTasks foreach (t => _tasks += t)
-    newTasks foreach (t => println("Created task \"%s\"".format(t)))
     newTasks
   }
 
