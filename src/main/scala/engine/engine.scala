@@ -81,7 +81,7 @@ object TaskState extends Enumeration {
   val New, Done, Running = Value
 }
 
-final class Task(val taskDef: TaskDefinition, val workflow: Workflow) extends TreeNode {
+final class Task(val taskDef: TaskDefinition, val workflow: Workflow) extends Cache with TreeNode {
   private var _state: TaskState.Value = TaskState.New
 
   println("Created task \"%s\"".format(this))
@@ -102,9 +102,9 @@ final class Task(val taskDef: TaskDefinition, val workflow: Workflow) extends Tr
   override def valueToString: String = taskDef.name
 }
 
-class ProcessTaskDefinition(func: () => Unit) extends TaskDefinition {
+class ProcessTaskDefinition(func: (TaskActionContext) => Unit) extends TaskDefinition {
   override def action(context: TaskActionContext): Option[ActionResult] = {
-    func()
+    func(context)
     Some(Ok)
   }
   override def name: String = "Process"
@@ -121,8 +121,8 @@ class SubWorkflowTaskDefinition(wfDef: WorkflowDefinition) extends TaskDefinitio
   override def name: String = "SubWorkflow[%s]".format(wfDef.name)
 }
 
-class BranchTaskDefinition(f: () => Boolean) extends TaskDefinition {
-  override def action(context: TaskActionContext): Option[ActionResult] = if (f()) Some(Yes) else Some(No)
+class BranchTaskDefinition(f: (TaskActionContext) => Boolean) extends TaskDefinition {
+  override def action(context: TaskActionContext): Option[ActionResult] = if (f(context)) Some(Yes) else Some(No)
   override def name: String = "Branch"
 }
 
@@ -155,7 +155,7 @@ class JoinTaskDefinition(n: Int) extends TaskDefinition {
   override def name: String = "Join"
 }
 
-final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow]) {
+final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow]) extends Cache {
   private val _tasks = mutable.ListBuffer.empty[Task]
 
   def this(wfDef: WorkflowDefinition) = this(wfDef, None)
