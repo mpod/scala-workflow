@@ -6,7 +6,7 @@ import util.Random
 class WaitTaskDefinition(n: Int) extends TaskDefinition {
   var waitFor = n
 
-  override def action: Option[ActionResult] = {
+  override def action(context: TaskActionContext): Option[ActionResult] = {
     waitFor -= 1
     if (waitFor <= 0)
       Some(Ok)

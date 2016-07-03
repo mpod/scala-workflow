@@ -30,7 +30,7 @@ case object No extends ActionResult
 case object JoinIsWaiting extends ActionResult
 
 abstract class TaskDefinition {
-  def action: Option[ActionResult]
+  def action(context: TaskActionContext): Option[ActionResult]
   def name: String
 }
 
@@ -39,21 +39,24 @@ abstract class WorkflowDefinition {
   val name: String
 }
 
+class TaskActionContext(val task: Task)
+
 object TaskState extends Enumeration {
   val New, Done, Running = Value
 }
 
-final class Task(val taskDef: TaskDefinition, workflow: Workflow) extends TreeNode {
+final class Task(val taskDef: TaskDefinition, val workflow: Workflow) extends TreeNode {
   private var _state: TaskState.Value = TaskState.New
 
   def execute: Option[ActionResult] = {
     _state = TaskState.Running
-    val r = taskDef.action
-    if (r.isDefined) {
+    val context = new TaskActionContext(this)
+    val actionResult: Option[ActionResult] = taskDef.action(context)
+    if (actionResult.isDefined) {
       println("Executed task \"%s\"".format(taskDef.name))
       _state = TaskState.Done
     }
-    r
+    actionResult
   }
 
   def isExecuted: Boolean = Set(TaskState.Done) contains _state
@@ -61,9 +64,9 @@ final class Task(val taskDef: TaskDefinition, workflow: Workflow) extends TreeNo
   override def valueToString: String = taskDef.name
 }
 
-class ProcessTaskDefinition(f: () => Unit) extends TaskDefinition {
-  override def action: Option[ActionResult] = {
-    f()
+class ProcessTaskDefinition(func: () => Unit) extends TaskDefinition {
+  override def action(context: TaskActionContext): Option[ActionResult] = {
+    func()
     Some(Ok)
   }
   override def name: String = "Process"
@@ -72,8 +75,8 @@ class ProcessTaskDefinition(f: () => Unit) extends TaskDefinition {
 class SubWorkflowTaskDefinition(wfDef: WorkflowDefinition) extends TaskDefinition {
   var wf: Option[Workflow] = None
 
-  override def action: Option[ActionResult] = wf match {
-    case None => wf = Some(Engine.startWorkflow(wfDef)); None
+  override def action(context: TaskActionContext): Option[ActionResult] = wf match {
+    case None => wf = Some(Engine.startWorkflow(wfDef, context.task.workflow)); None
     case Some(x) => if (x.endExecuted) Some(Ok) else None
   }
 
@@ -81,29 +84,29 @@ class SubWorkflowTaskDefinition(wfDef: WorkflowDefinition) extends TaskDefinitio
 }
 
 class BranchTaskDefinition(f: () => Boolean) extends TaskDefinition {
-  override def action: Option[ActionResult] = if (f()) Some(Yes) else Some(No)
+  override def action(context: TaskActionContext): Option[ActionResult] = if (f()) Some(Yes) else Some(No)
   override def name: String = "Branch"
 }
 
 class SplitTaskDefinition extends TaskDefinition {
-  override def action: Option[ActionResult] = Some(Ok)
+  override def action(context: TaskActionContext): Option[ActionResult] = Some(Ok)
   override def name: String = "Split"
 }
 
 object StartTaskDefinition extends TaskDefinition {
-  override def action: Option[ActionResult] = Option(Ok)
+  override def action(context: TaskActionContext): Option[ActionResult] = Option(Ok)
   override def name: String = "Start"
 }
 
 object EndTaskDefinition extends TaskDefinition {
-  override def action: Option[ActionResult] = Option(Ok)
+  override def action(context: TaskActionContext): Option[ActionResult] = Option(Ok)
   override def name: String = "End"
 }
 
 class JoinTaskDefinition(n: Int) extends TaskDefinition {
   var inputLines = n
 
-  override def action: Option[ActionResult] = {
+  override def action(context: TaskActionContext): Option[ActionResult] = {
     inputLines -= 1
     if (inputLines == 0)
       Some(Ok)
@@ -202,6 +205,10 @@ object Engine {
 
   def startWorkflow(wfDef: WorkflowDefinition): Workflow = {
     startWorkflow(wfDef, None)
+  }
+
+  def startWorkflow(wfDef: WorkflowDefinition, parentWf: Workflow): Workflow = {
+    startWorkflow(wfDef, Some(parentWf))
   }
 
   def startWorkflow(wfDef: WorkflowDefinition, parentWf: Option[Workflow]): Workflow = {
