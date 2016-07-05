@@ -23,7 +23,7 @@ trait TreeNode {
   }
 }
 
-trait Cache {
+class Cache {
   private var _intCache: Map[String, Int] = Map()
   private var _stringCache: Map[String, String] = Map()
 
@@ -75,14 +75,17 @@ abstract class WorkflowDefinition {
   val name: String
 }
 
-class TaskActionContext(val task: Task)
+class TaskActionContext(val task: Task) {
+  def workflow = task.workflow
+}
 
 object TaskState extends Enumeration {
   val New, Done, Running = Value
 }
 
-final class Task(val taskDef: TaskDefinition, val workflow: Workflow) extends Cache with TreeNode {
+final class Task(val taskDef: TaskDefinition, val workflow: Workflow) extends TreeNode {
   private var _state: TaskState.Value = TaskState.New
+  val cache = new Cache()
 
   println("Created task \"%s\"".format(this))
 
@@ -155,8 +158,9 @@ class JoinTaskDefinition(n: Int) extends TaskDefinition {
   override def name: String = "Join"
 }
 
-final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow]) extends Cache {
+final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow]) {
   private val _tasks = mutable.ListBuffer.empty[Task]
+  val cache = new Cache()
 
   def this(wfDef: WorkflowDefinition) = this(wfDef, None)
 

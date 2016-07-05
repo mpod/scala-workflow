@@ -25,11 +25,11 @@ object ExampleWorkflow extends WorkflowDefinition {
   val subWf = new SubWorkflowTaskDefinition(ExampleSubWorkflow)
   val proc1 = new ProcessTaskDefinition(context => {
     val n = 2
-    context.task.workflow.setIntVal("n", n)
+    context.workflow.cache.setIntVal("n", n)
     println("Writing %d to workflow cache".format(n))
   })
   val proc2 = new ProcessTaskDefinition(context => {
-    println("Reading %d from workflow cache".format(context.task.workflow.getIntVal("n")))
+    println("Reading %d from workflow cache".format(context.workflow.cache.getIntVal("n")))
   })
 
   override val transitions: Map[(TaskDefinition, ActionResult), List[TaskDefinition]] = Map(
