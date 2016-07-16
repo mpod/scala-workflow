@@ -5,6 +5,8 @@ import engine._
 
 case class StartWorkflow(wfDef: WorkflowDefinition)
 case class ExecuteRound()
+case class AllWorkflowsFinished()
+case class SomeWorkflowsUpdated()
 
 class EngineActor extends Actor {
   val engine = new Engine()
@@ -12,7 +14,11 @@ class EngineActor extends Actor {
   def receive = {
     case StartWorkflow(wfDef) =>
       engine.startWorkflow(wfDef)
-      context.self ! ExecuteRound()
-    case ExecuteRound() => engine.executeRound
+      sender ! "Workflow Started"
+    case ExecuteRound() =>
+      if (engine.executeRound.nonEmpty)
+        sender ! SomeWorkflowsUpdated()
+      else
+        sender ! AllWorkflowsFinished()
   }
 }
