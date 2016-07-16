@@ -77,6 +77,7 @@ abstract class WorkflowDefinition {
 
 class TaskActionContext(val task: Task) {
   def workflow = task.workflow
+  def engine = workflow.engine
 }
 
 object TaskState extends Enumeration {
@@ -117,7 +118,7 @@ class SubWorkflowTaskDefinition(wfDef: WorkflowDefinition) extends TaskDefinitio
   var wf: Option[Workflow] = None
 
   override def action(context: TaskActionContext): Option[ActionResult] = wf match {
-    case None => wf = Some(Engine.startWorkflow(wfDef, context.task.workflow)); None
+    case None => wf = Some(context.engine.startWorkflow(wfDef, context.task.workflow)); None
     case Some(x) => if (x.endExecuted) Some(Ok) else None
   }
 
@@ -158,11 +159,11 @@ class JoinTaskDefinition(n: Int) extends TaskDefinition {
   override def name: String = "Join"
 }
 
-final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow]) {
+final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow], val engine: Engine) {
   private val _tasks = mutable.ListBuffer.empty[Task]
   val cache = new Cache()
 
-  def this(wfDef: WorkflowDefinition) = this(wfDef, None)
+  def this(wfDef: WorkflowDefinition, engine: Engine) = this(wfDef, None, engine)
 
   def start: Task = {
     val task = new Task(StartTaskDefinition, this)
@@ -197,7 +198,7 @@ final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow]) {
 
 abstract class Service
 
-object Engine {
+class Engine {
   val _workflows = mutable.ListBuffer.empty[Workflow]
 
   def startWorkflow(wfDef: WorkflowDefinition): Workflow = {
@@ -209,7 +210,7 @@ object Engine {
   }
 
   def startWorkflow(wfDef: WorkflowDefinition, parentWf: Option[Workflow]): Workflow = {
-    val wf = new Workflow(wfDef, parentWf)
+    val wf = new Workflow(wfDef, parentWf, this)
     wf.start
     _workflows += wf
     wf
