@@ -60,5 +60,7 @@ Stream.from(1).head
 
 new java.lang.String("222")
 
+Vector.fill(5) {2}
+
 
 
