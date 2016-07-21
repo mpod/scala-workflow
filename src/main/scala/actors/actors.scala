@@ -1,6 +1,6 @@
 package actors
 
-import actors.IdAllocatorActor.{AllocateBlock, AllocatedBlock}
+import actors.IdAllocatorActor.{AllocateIdBlock, AllocatedIdBlock}
 import akka.actor.{Actor, ActorRef, Props}
 import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
 import akka.routing._
@@ -8,10 +8,14 @@ import engine._
 
 case object GetWorkflows
 case class CreateWorkflow(wfDef: WorkflowDefinition)
+case class CreateWorkflowExtended(wfDef: WorkflowDefinition, id: Int)
 case class IdAllocatorActorRef(ref: ActorRef)
 
 class RouterActor extends Actor {
+  import context._
+
   var idAllocator: ActorRef = ActorRef.noSender
+  var allocatedIds: List[Int] = List.empty
 
   def hashMapping: ConsistentHashMapping = {
     case wfId: Int => wfId
@@ -26,20 +30,35 @@ class RouterActor extends Actor {
     Router(ConsistentHashingRoutingLogic(context.system, 10, hashMapping = hashMapping), routees)
   }
 
-  def receive = {
+  def receive = uninitialized
+
+  def uninitialized: Receive = {
     case IdAllocatorActorRef(ref) =>
       context.children.foreach(_ ! IdAllocatorActorRef(ref))
       idAllocator = ref
-      idAllocator ! AllocateBlock
-    case GetWorkflows => ???
-    case AllocatedBlock(identifiers) =>
-      println(identifiers)
+      idAllocator ! AllocateIdBlock
+      become(initialized)
+    case _ =>
+      throw new RuntimeException("Not ready!")
+  }
+
+  def initialized: Receive = {
+    case GetWorkflows =>
+    case AllocatedIdBlock(ids) =>
+      allocatedIds ++= ids
+    case CreateWorkflow(wfDef) =>
+      if (allocatedIds.nonEmpty) {
+        val id = allocatedIds.head
+        allocatedIds = allocatedIds.tail
+        if (allocatedIds.length < 10) idAllocator ! AllocateIdBlock
+        router.route(CreateWorkflowExtended(wfDef, id), sender())
+      } else
+        throw new RuntimeException("System under too big load!")
   }
 }
 
 object ViewActor {
   def props(index: Int): Props = Props(new ViewActor(index))
-
 }
 
 class ViewActor(index: Int) extends Actor {
@@ -67,8 +86,8 @@ class EngineActor extends Actor {
 }
 
 object IdAllocatorActor {
-  case object AllocateBlock
-  case class AllocatedBlock(identifiers: IndexedSeq[Int])
+  case object AllocateIdBlock
+  case class AllocatedIdBlock(identifiers: List[Int])
 }
 
 class IdAllocatorActor extends Actor {
@@ -76,8 +95,8 @@ class IdAllocatorActor extends Actor {
   val blockSize = 50
 
   def receive = {
-    case AllocateBlock =>
-      sender() ! AllocatedBlock(new Range(lastId, lastId + blockSize, 1))
+    case AllocateIdBlock =>
+      sender() ! AllocatedIdBlock(new Range(lastId, lastId + blockSize, 1).toList)
       lastId += blockSize
   }
 }
