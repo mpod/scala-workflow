@@ -60,7 +60,9 @@ Stream.from(1).head
 
 new java.lang.String("222")
 
-Vector.fill(5) {2}
+Vector.fill(5) {x: Int => x}
+
+new Range(0, 10, 1).map(x => 2 + x)
 
 
 
