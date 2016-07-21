@@ -18,7 +18,7 @@ class RouterActor extends Actor {
   var allocatedIds: List[Int] = List.empty
 
   def hashMapping: ConsistentHashMapping = {
-    case wfId: Int => wfId
+    case CreateWorkflowExtended(wfDef, id) => id
   }
 
   var router = {
@@ -67,21 +67,25 @@ class ViewActor(index: Int) extends Actor {
   def receive = {
     case GetWorkflows =>
       sender() ! "List of workflows"
-    case CreateWorkflow =>
-      engineChild ! CreateWorkflow
-    case IdAllocatorActorRef(ref) => engineChild ! IdAllocatorActorRef(ref)
+    case msg: CreateWorkflowExtended =>
+      engineChild forward msg
+    case msg: IdAllocatorActorRef =>
+      engineChild ! msg
   }
 }
 
 class EngineActor extends Actor {
   val engine = new Engine()
   var idAllocator: ActorRef = ActorRef.noSender
+  var allocatedIds: List[Int] = List.empty
 
   def receive = {
-    case CreateWorkflow(wfDef) =>
-      engine.startWorkflow(wfDef)
+    case CreateWorkflowExtended(wfDef, id) =>
+      sender() ! s"Created workflow $id"
     case IdAllocatorActorRef(ref) =>
       idAllocator = ref
+    case AllocatedIdBlock(ids) =>
+      allocatedIds ++= ids
   }
 }
 
