@@ -2,20 +2,44 @@ package actors
 
 import actors.IdAllocatorActor.{AllocateIdBlock, AllocatedIdBlock}
 import akka.actor.{Actor, ActorRef, Props}
+import akka.pattern.ask
 import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
 import akka.routing._
+import akka.util.Timeout
 import engine._
+import scala.concurrent.duration._
+import scala.concurrent.Future
+import scala.language.postfixOps
 
 case object GetWorkflows
 case class CreateWorkflow(wfDef: WorkflowDefinition)
 case class CreateWorkflowExtended(wfDef: WorkflowDefinition, id: Int)
 case class IdAllocatorActorRef(ref: ActorRef)
 
-class RouterActor extends Actor {
+trait IdConsumer {
+  var idAllocator: ActorRef
+  var allocatedIds: List[Int]
+
+  def consumeNextId: Int = {
+    if (allocatedIds.isEmpty)
+      throw new RuntimeException("System under too big load!")
+    val id = allocatedIds.head
+    allocatedIds = allocatedIds.tail
+    if (allocatedIds.length < 10) idAllocator ! AllocateIdBlock
+    id
+  }
+
+  def extendAvailableIds(newIds: List[Int]): Unit = {
+    allocatedIds ++= newIds
+  }
+}
+
+class RouterActor extends Actor with IdConsumer {
   import context._
 
   var idAllocator: ActorRef = ActorRef.noSender
   var allocatedIds: List[Int] = List.empty
+  implicit val timeout = Timeout(10 seconds)
 
   def hashMapping: ConsistentHashMapping = {
     case CreateWorkflowExtended(wfDef, id) => id
@@ -44,16 +68,15 @@ class RouterActor extends Actor {
 
   def initialized: Receive = {
     case GetWorkflows =>
+      val f = Future.sequence(context.children map {c => (c ? GetWorkflows).mapTo[String]})
+      f onSuccess {
+        case workflows =>
+          sender() ! workflows
+      }
     case AllocatedIdBlock(ids) =>
-      allocatedIds ++= ids
+      extendAvailableIds(ids)
     case CreateWorkflow(wfDef) =>
-      if (allocatedIds.nonEmpty) {
-        val id = allocatedIds.head
-        allocatedIds = allocatedIds.tail
-        if (allocatedIds.length < 10) idAllocator ! AllocateIdBlock
-        router.route(CreateWorkflowExtended(wfDef, id), sender())
-      } else
-        throw new RuntimeException("System under too big load!")
+      router.route(CreateWorkflowExtended(wfDef, consumeNextId), sender())
   }
 }
 
@@ -74,7 +97,7 @@ class ViewActor(index: Int) extends Actor {
   }
 }
 
-class EngineActor extends Actor {
+class EngineActor extends Actor with IdConsumer {
   val engine = new Engine()
   var idAllocator: ActorRef = ActorRef.noSender
   var allocatedIds: List[Int] = List.empty
@@ -85,7 +108,7 @@ class EngineActor extends Actor {
     case IdAllocatorActorRef(ref) =>
       idAllocator = ref
     case AllocatedIdBlock(ids) =>
-      allocatedIds ++= ids
+      extendAvailableIds(ids)
   }
 }
 
