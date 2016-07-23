@@ -68,10 +68,11 @@ class RouterActor extends Actor with IdConsumer {
 
   def initialized: Receive = {
     case GetWorkflows =>
+      val senderRef = sender()
       val f = Future.sequence(context.children map {c => (c ? GetWorkflows).mapTo[String]})
       f onSuccess {
         case workflows =>
-          sender() ! workflows
+          senderRef ! workflows
       }
     case AllocatedIdBlock(ids) =>
       extendAvailableIds(ids)
