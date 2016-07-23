@@ -31,7 +31,9 @@ object RestServer {
           get {
             val f: Future[List[String]] = (router ? GetWorkflows).mapTo[List[String]]
             onSuccess(f) {
-              workflows => complete(workflows.toJson.toString)
+              workflows => {
+                complete(workflows.toJson.toString)
+              }
             }
           } ~
           post {
