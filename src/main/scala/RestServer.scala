@@ -1,4 +1,3 @@
-import actors.{CreateWorkflow, GetWorkflows, IdAllocatorActor, IdAllocatorActorRef}
 import akka.actor.{ActorSystem, Props}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Directives._
@@ -7,6 +6,8 @@ import akka.util.Timeout
 import akka.pattern.ask
 import spray.json._
 import DefaultJsonProtocol._
+import actors.IdAllocatorActor
+import actors.WorkflowProtocol.{CreateWorkflow, GetWorkflows, IdAllocatorActorRef}
 import definitions.ExampleWorkflow
 
 import scala.concurrent.duration._
