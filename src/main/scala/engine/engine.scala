@@ -1,6 +1,5 @@
 package engine
 
-import scala.collection.mutable
 import com.typesafe.scalalogging.LazyLogging
 
 trait TreeNode {
@@ -164,7 +163,7 @@ class JoinTaskDefinition(n: Int) extends TaskDefinition {
 
 final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow], val engine: Engine)
                     (implicit idGen: IdGenerator) extends LazyLogging {
-  private val _tasks = mutable.ListBuffer.empty[Task]
+  private var _tasks = List.empty[Task]
   val cache = new Cache()
   val id = idGen.nextId
 
@@ -172,13 +171,13 @@ final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow], val en
 
   def start: Task = {
     val task = new Task(StartTaskDefinition, this)
-    _tasks += task
+    _tasks ::= task
     logger.debug("Started workflow \"%s\" with id %d".format(wfDef.name, id))
     task
   }
 
   def executeRound: List[Task] = {
-    val newTasksHelper: mutable.ListBuffer[List[Task]] = for {
+    val newTasksHelper: List[List[Task]] = for {
       t <- _tasks
       if !t.isExecuted
       r <- t.execute
@@ -189,8 +188,8 @@ final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow], val en
         _ = t.addChild(nt)
       } yield nt
     } yield newTasks
-    val newTasks = newTasksHelper.toList.flatten
-    newTasks foreach (t => _tasks += t)
+    val newTasks = newTasksHelper.flatten
+    newTasks foreach (t => _tasks ::= t)
     newTasks
   }
 
@@ -204,7 +203,7 @@ final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow], val en
 abstract class Service
 
 class Engine(implicit idGen: IdGenerator) {
-  val _workflows = mutable.ListBuffer.empty[Workflow]
+  var _workflows = List.empty[Workflow]
 
   def startWorkflow(wfDef: WorkflowDefinition): Workflow = {
     startWorkflow(wfDef, None)
@@ -217,7 +216,7 @@ class Engine(implicit idGen: IdGenerator) {
   def startWorkflow(wfDef: WorkflowDefinition, parentWf: Option[Workflow]): Workflow = {
     val wf = new Workflow(wfDef, parentWf, this)
     wf.start
-    _workflows += wf
+    _workflows ::= wf
     wf
   }
 
