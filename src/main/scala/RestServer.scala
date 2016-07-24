@@ -9,7 +9,6 @@ import DefaultJsonProtocol._
 import actors.IdAllocatorActor
 import actors.WorkflowProtocol.{CreateWorkflow, GetWorkflows, IdAllocatorActorRef}
 import definitions.ExampleWorkflow
-
 import scala.concurrent.duration._
 import scala.io.StdIn
 import scala.language.postfixOps

@@ -92,13 +92,17 @@ class EngineActor extends Actor {
     case IdAllocatorActorRef(ref) =>
       idGenerator = new ActorBasedIdGenerator(ref)
       engine = new Engine()
+      context.system.scheduler.scheduleOnce(1 second, self, ExecuteRound)
+    case ExecuteRound =>
+      engine.executeRound
+      context.system.scheduler.scheduleOnce(1 second, self, ExecuteRound)
   }
 }
 
 class ActorBasedIdGenerator(allocator: ActorRef) extends IdGenerator {
-  var ids: List[Int] = List.empty
-  implicit val timeout = Timeout(10 seconds)
   import scala.concurrent.ExecutionContext.Implicits.global
+  implicit val timeout = Timeout(10 seconds)
+  var ids = List.empty[Int]
   var allocation = _createAllocation()
   var forcedNextId: Option[Int] = None
 
