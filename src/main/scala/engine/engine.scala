@@ -1,6 +1,7 @@
 package engine
 
 import scala.collection.mutable
+import com.typesafe.scalalogging.LazyLogging
 
 trait TreeNode {
   private var _parent: Option[TreeNode] = None
@@ -84,19 +85,20 @@ object TaskState extends Enumeration {
   val New, Done, Running = Value
 }
 
-final class Task(val taskDef: TaskDefinition, val workflow: Workflow)(implicit idGen: IdGenerator) extends TreeNode {
+final class Task(val taskDef: TaskDefinition, val workflow: Workflow)(implicit idGen: IdGenerator)
+  extends TreeNode with LazyLogging {
   private var _state: TaskState.Value = TaskState.New
   val cache = new Cache()
   val id = idGen.nextId
 
-  println("Created task \"%s\" with id %d".format(this, id))
+  logger.debug("Created task \"%s\" with id %d".format(this, id))
 
   def execute: Option[ActionResult] = {
     _state = TaskState.Running
     val context = new TaskActionContext(this)
     val actionResult: Option[ActionResult] = taskDef.action(context)
     if (actionResult.isDefined) {
-      println("Executed task \"%s\" with id %d".format(taskDef.name, id))
+      logger.debug("Executed task \"%s\" with id %d".format(taskDef.name, id))
       _state = TaskState.Done
     }
     actionResult
@@ -160,7 +162,8 @@ class JoinTaskDefinition(n: Int) extends TaskDefinition {
   override def name: String = "Join"
 }
 
-final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow], val engine: Engine)(implicit idGen: IdGenerator) {
+final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow], val engine: Engine)
+                    (implicit idGen: IdGenerator) extends LazyLogging {
   private val _tasks = mutable.ListBuffer.empty[Task]
   val cache = new Cache()
   val id = idGen.nextId
@@ -170,7 +173,7 @@ final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow], val en
   def start: Task = {
     val task = new Task(StartTaskDefinition, this)
     _tasks += task
-    println("Started workflow \"%s\" with id %d".format(wfDef.name, id))
+    logger.debug("Started workflow \"%s\" with id %d".format(wfDef.name, id))
     task
   }
 
