@@ -1,4 +1,4 @@
-import actors.{GetWorkflows, IdAllocatorActor, IdAllocatorActorRef}
+import actors.{CreateWorkflow, GetWorkflows, IdAllocatorActor, IdAllocatorActorRef}
 import akka.actor.{ActorSystem, Props}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Directives._
@@ -6,8 +6,8 @@ import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import akka.pattern.ask
 import spray.json._
-import scala.concurrent.Future
 import DefaultJsonProtocol._
+import definitions.ExampleWorkflow
 
 import scala.concurrent.duration._
 import scala.io.StdIn
@@ -20,7 +20,7 @@ object RestServer {
     implicit val executionContext = system.dispatcher
     implicit val timeout = Timeout(10 seconds)
 
-    val idAllocator = system.actorOf(Props[IdAllocatorActor])
+    val idAllocator = system.actorOf(Props[IdAllocatorActor], "allocator")
     val router = system.actorOf(Props[actors.RouterActor], "router")
 
     router ! IdAllocatorActorRef(idAllocator)
@@ -29,15 +29,18 @@ object RestServer {
       pathPrefix("workflows") {
         pathEnd {
           get {
-            val f: Future[List[String]] = (router ? GetWorkflows).mapTo[List[String]]
-            onSuccess(f) {
+            onSuccess((router ? GetWorkflows).mapTo[List[String]]) {
               workflows => {
                 complete(workflows.toJson.toString)
               }
             }
           } ~
           post {
-            complete("create workflow")
+            onSuccess((router ? CreateWorkflow(ExampleWorkflow)).mapTo[String]) {
+              response => {
+                complete(response)
+              }
+            }
           }
         }
       }

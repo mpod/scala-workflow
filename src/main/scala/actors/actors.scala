@@ -7,8 +7,9 @@ import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
 import akka.routing._
 import akka.util.Timeout
 import engine._
+
 import scala.concurrent.duration._
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
 
 case object GetWorkflows
@@ -16,30 +17,58 @@ case class CreateWorkflow(wfDef: WorkflowDefinition)
 case class CreateWorkflowExtended(wfDef: WorkflowDefinition, id: Int)
 case class IdAllocatorActorRef(ref: ActorRef)
 
-trait IdConsumer {
-  var idAllocator: ActorRef
-  var allocatedIds: List[Int]
+class ActorBasedIdGenerator(allocator: ActorRef) extends IdGenerator {
+  var ids: List[Int] = List.empty
+  implicit val timeout = Timeout(10 seconds)
+  import scala.concurrent.ExecutionContext.Implicits.global
+  var allocation = _createAllocation()
+  var forcedNextId: Option[Int] = None
 
-  def consumeNextId: Int = {
-    if (allocatedIds.isEmpty)
-      throw new RuntimeException("System under too big load!")
-    val id = allocatedIds.head
-    allocatedIds = allocatedIds.tail
-    if (allocatedIds.length < 10) idAllocator ! AllocateIdBlock
+  def _createAllocation(): Future[AllocatedIdBlock] = {
+    val f = (allocator ? AllocateIdBlock).mapTo[AllocatedIdBlock]
+    f onSuccess {
+      case AllocatedIdBlock(block) =>
+        ids ++= block
+    }
+    f
+  }
+
+  def _allocate(): Unit = {
+    if (!allocation.isCompleted) {
+      Await.ready(allocation, 10 seconds)
+    } else {
+      allocation = _createAllocation()
+    }
+  }
+
+  override def nextId: Int = {
+    if (ids.isEmpty) _allocate()
+    val id = forcedNextId match {
+      case None =>
+        val _id = ids.head
+        ids = ids.tail
+        _id
+      case Some(_id) =>
+        forcedNextId = None
+        _id
+    }
+    if (ids.length < 10) _allocate()
     id
   }
 
-  def extendAvailableIds(newIds: List[Int]): Unit = {
-    allocatedIds ++= newIds
+  def forceNextId(id: Int) = forcedNextId match {
+    case None =>
+      forcedNextId = Some(id)
+    case Some(_) =>
+      throw new IllegalStateException("Only one value can be forced for next id.")
   }
 }
 
-class RouterActor extends Actor with IdConsumer {
+class RouterActor extends Actor {
   import context._
-
-  var idAllocator: ActorRef = ActorRef.noSender
-  var allocatedIds: List[Int] = List.empty
   implicit val timeout = Timeout(10 seconds)
+
+  var idGenerator: ActorBasedIdGenerator = _
 
   def hashMapping: ConsistentHashMapping = {
     case CreateWorkflowExtended(wfDef, id) => id
@@ -59,8 +88,7 @@ class RouterActor extends Actor with IdConsumer {
   def uninitialized: Receive = {
     case IdAllocatorActorRef(ref) =>
       context.children.foreach(_ ! IdAllocatorActorRef(ref))
-      idAllocator = ref
-      idAllocator ! AllocateIdBlock
+      idGenerator = new ActorBasedIdGenerator(ref)
       become(initialized)
     case _ =>
       throw new RuntimeException("Not ready!")
@@ -74,10 +102,8 @@ class RouterActor extends Actor with IdConsumer {
         case workflows =>
           senderRef ! workflows
       }
-    case AllocatedIdBlock(ids) =>
-      extendAvailableIds(ids)
     case CreateWorkflow(wfDef) =>
-      router.route(CreateWorkflowExtended(wfDef, consumeNextId), sender())
+      router.route(CreateWorkflowExtended(wfDef, idGenerator.nextId), sender())
   }
 }
 
@@ -98,18 +124,18 @@ class ViewActor(index: Int) extends Actor {
   }
 }
 
-class EngineActor extends Actor with IdConsumer {
-  val engine = new Engine()
-  var idAllocator: ActorRef = ActorRef.noSender
-  var allocatedIds: List[Int] = List.empty
+class EngineActor extends Actor {
+  implicit var idGenerator: ActorBasedIdGenerator = _
+  var engine: Engine = _
 
   def receive = {
     case CreateWorkflowExtended(wfDef, id) =>
+      idGenerator.forceNextId(id)
+      engine.startWorkflow(wfDef)
       sender() ! s"Created workflow $id"
     case IdAllocatorActorRef(ref) =>
-      idAllocator = ref
-    case AllocatedIdBlock(ids) =>
-      extendAvailableIds(ids)
+      idGenerator = new ActorBasedIdGenerator(ref)
+      engine = new Engine()
   }
 }
 
@@ -128,3 +154,5 @@ class IdAllocatorActor extends Actor {
       lastId += blockSize
   }
 }
+
+

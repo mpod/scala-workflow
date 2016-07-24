@@ -84,18 +84,19 @@ object TaskState extends Enumeration {
   val New, Done, Running = Value
 }
 
-final class Task(val taskDef: TaskDefinition, val workflow: Workflow) extends TreeNode {
+final class Task(val taskDef: TaskDefinition, val workflow: Workflow)(implicit idGen: IdGenerator) extends TreeNode {
   private var _state: TaskState.Value = TaskState.New
   val cache = new Cache()
+  val id = idGen.nextId
 
-  println("Created task \"%s\"".format(this))
+  println("Created task \"%s\" with id %d".format(this, id))
 
   def execute: Option[ActionResult] = {
     _state = TaskState.Running
     val context = new TaskActionContext(this)
     val actionResult: Option[ActionResult] = taskDef.action(context)
     if (actionResult.isDefined) {
-      println("Executed task \"%s\"".format(taskDef.name))
+      println("Executed task \"%s\" with id %d".format(taskDef.name, id))
       _state = TaskState.Done
     }
     actionResult
@@ -159,16 +160,17 @@ class JoinTaskDefinition(n: Int) extends TaskDefinition {
   override def name: String = "Join"
 }
 
-final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow], val engine: Engine) {
+final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow], val engine: Engine)(implicit idGen: IdGenerator) {
   private val _tasks = mutable.ListBuffer.empty[Task]
   val cache = new Cache()
+  val id = idGen.nextId
 
-  def this(wfDef: WorkflowDefinition, engine: Engine) = this(wfDef, None, engine)
+  def this(wfDef: WorkflowDefinition, engine: Engine)(implicit idGen: IdGenerator) = this(wfDef, None, engine)
 
   def start: Task = {
     val task = new Task(StartTaskDefinition, this)
     _tasks += task
-    println("Started workflow \"%s\"".format(wfDef.name))
+    println("Started workflow \"%s\" with id %d".format(wfDef.name, id))
     task
   }
 
@@ -198,7 +200,7 @@ final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow], val en
 
 abstract class Service
 
-class Engine {
+class Engine(implicit idGen: IdGenerator) {
   val _workflows = mutable.ListBuffer.empty[Workflow]
 
   def startWorkflow(wfDef: WorkflowDefinition): Workflow = {
@@ -223,4 +225,15 @@ class Engine {
   } yield wf
 }
 
+abstract class IdGenerator {
+  def nextId: Int
+}
 
+object SimpleIdGenerator extends IdGenerator {
+  var id = 0
+
+  override def nextId: Int = {
+    id += 1
+    id
+  }
+}

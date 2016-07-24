@@ -24,3 +24,4 @@ f(c)
 
 List("a", "b", "c").mkString(", ")
 
+List(1, 2, 3)
