@@ -17,3 +17,6 @@ project/plugins/project/
 .worksheet
 
 .idea/
+/src/main/scala/playground.sc
+src/main/java/
+src/main/scala-2.11/
