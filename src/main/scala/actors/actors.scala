@@ -10,6 +10,7 @@ import engine._
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object WorkflowProtocol {
   case object GetWorkflows
@@ -88,7 +89,6 @@ class EngineActor extends Actor {
       idGenerator.forceNextId(id)
       engine.startWorkflow(wfDef)
       sender() ! s"Created workflow $id"
-      context.system.scheduler.scheduleOnce(500 millis, self, "tick")
     case IdAllocatorActorRef(ref) =>
       idGenerator = new ActorBasedIdGenerator(ref)
       engine = new Engine()

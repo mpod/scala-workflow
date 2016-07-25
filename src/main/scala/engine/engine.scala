@@ -90,6 +90,8 @@ final class Task(val taskDef: TaskDefinition, val workflow: Workflow)(implicit i
   val cache = new Cache()
   val id = idGen.nextId
 
+  def state = _state
+
   logger.debug("Created task \"%s\" with id %d".format(this, id))
 
   def execute: Option[ActionResult] = {
@@ -148,7 +150,7 @@ object EndTaskDefinition extends TaskDefinition {
 }
 
 class JoinTaskDefinition(n: Int) extends TaskDefinition {
-  var inputLines = n
+  private var inputLines = n
 
   override def action(context: TaskActionContext): Option[ActionResult] = {
     inputLines -= 1
@@ -167,6 +169,8 @@ final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow], val en
   val cache = new Cache()
   val id = idGen.nextId
 
+  def tasks = _tasks
+
   def this(wfDef: WorkflowDefinition, engine: Engine)(implicit idGen: IdGenerator) = this(wfDef, None, engine)
 
   def start: Task = {
@@ -176,21 +180,17 @@ final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow], val en
     task
   }
 
-  def executeRound: List[Task] = {
-    val newTasksHelper: List[List[Task]] = for {
-      t <- _tasks
-      if !t.isExecuted
-      r <- t.execute
-      tDefs <- wfDef.transitions.get((t.taskDef, r))
-      newTasks = for {
-        tDef <- tDefs
-        nt = new Task(tDef, this)
-        _ = t.addChild(nt)
-      } yield nt
-    } yield newTasks
-    val newTasks = newTasksHelper.flatten
-    newTasks foreach (t => _tasks ::= t)
-    newTasks
+  def executeRound: List[Task] = for {
+    t <- _tasks
+    if !t.isExecuted
+    r = t.execute
+    if r.isDefined
+    tDef <- wfDef.transitions.getOrElse((t.taskDef, r.get), List.empty[TaskDefinition])
+  } yield {
+    val nt = new Task(tDef, this)
+    t.addChild(nt)
+    _tasks ::= nt
+    nt
   }
 
   def isStarted: Boolean = _tasks.nonEmpty
@@ -203,7 +203,9 @@ final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow], val en
 abstract class Service
 
 class Engine(implicit idGen: IdGenerator) {
-  var _workflows = List.empty[Workflow]
+  private var _workflows = List.empty[Workflow]
+
+  def workflows = _workflows
 
   def startWorkflow(wfDef: WorkflowDefinition): Workflow = {
     startWorkflow(wfDef, None)
