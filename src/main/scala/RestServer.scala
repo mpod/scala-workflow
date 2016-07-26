@@ -5,10 +5,10 @@ import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import akka.pattern.ask
 import spray.json._
-import DefaultJsonProtocol._
-import actors.IdAllocatorActor
-import actors.WorkflowProtocol.{CreateWorkflow, GetWorkflows, IdAllocatorActorRef}
+import actors.{IdAllocatorActor, WorkflowView}
+import actors.WorkflowProtocol.{CreateWorkflow, GetWorkflows, IdAllocatorActorRef, WorkflowViews}
 import definitions.ExampleWorkflow
+
 import scala.concurrent.duration._
 import scala.io.StdIn
 import scala.language.postfixOps
@@ -29,9 +29,10 @@ object RestServer {
       pathPrefix("workflows") {
         pathEnd {
           get {
-            onSuccess((router ? GetWorkflows).mapTo[List[String]]) {
-              workflows => {
-                complete(workflows.toJson.toString)
+            onSuccess((router ? GetWorkflows).mapTo[WorkflowViews]) {
+              workflowViews => {
+                val json = JsArray(workflowViews.wfViews map (view => view.toJson) toVector)
+                complete(json.toString)
               }
             }
           } ~

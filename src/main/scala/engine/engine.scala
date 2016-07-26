@@ -32,12 +32,8 @@ class Cache {
   }
 
   private def checkName(name: String, valueType: ValueType.Value): Boolean = {
-    if (valueType != ValueType.String && _stringCache.contains(name))
-      false
-    else if (valueType != ValueType.Int && _intCache.contains(name))
-      false
-    else
-      true
+    ! (valueType != ValueType.String && _stringCache.contains(name)) ||
+      (valueType != ValueType.Int && _intCache.contains(name))
   }
 
   def setIntVal(name: String, value: Int): Unit = {
@@ -170,6 +166,8 @@ final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow], val en
   val id = idGen.nextId
 
   def tasks = _tasks
+  def workflowDef = wfDef
+  def parentWorkflow = parent
 
   def this(wfDef: WorkflowDefinition, engine: Engine)(implicit idGen: IdGenerator) = this(wfDef, None, engine)
 
@@ -225,8 +223,10 @@ class Engine(implicit idGen: IdGenerator) {
   def executeRound: Seq[Workflow] = for {
     wf <- _workflows
     if !wf.allExecuted
-    dummy = wf.executeRound
-  } yield wf
+  } yield {
+    wf.executeRound
+    wf
+  }
 }
 
 abstract class IdGenerator {
