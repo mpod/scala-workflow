@@ -1,5 +1,7 @@
 package actors
 
+import java.awt.Color
+
 import actors.WorkflowProtocol._
 import akka.actor.{Actor, ActorRef, Props}
 import akka.pattern.ask
@@ -7,6 +9,8 @@ import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
 import akka.routing._
 import akka.util.Timeout
 import engine._
+import spray.json.{DefaultJsonProtocol, DeserializationException, JsArray, JsNumber, JsObject, JsString, JsValue, RootJsonFormat}
+
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
@@ -19,8 +23,35 @@ object WorkflowProtocol {
   case class CreateWorkflowExtended(wfDef: WorkflowDefinition, id: Int)
   case object ExecuteRound
   case object AllocateIdBlock
-  case class AllocatedIdBlock(identifiers: List[Int])
+  case class AllocatedIdBlock(identifiers: Seq[Int])
+  case class WorkflowViews(wfViews: Seq[WorkflowView])
 }
+
+/*
+object WorkflowJsonProtocol extends DefaultJsonProtocol {
+  implicit object WorkflowViewsJsonFormat extends RootJsonFormat[WorkflowViews] {
+    def write(c: WorkflowViews) = JsArray(
+    )
+    def read(value: JsValue) = {
+      value.asJsObject.getFields("name", "red", "green", "blue") match {
+        case Seq(JsString(name), JsNumber(red), JsNumber(green), JsNumber(blue)) =>
+          new WorkflowViews()
+        case _ => throw new DeserializationException("Color expected")
+      }
+    }
+  }
+
+  implicit object WorkflowViewJsonFormat extends RootJsonFormat[WorkflowView] {
+    override def read(json: JsValue): WorkflowView = {
+      json.asJsObject.getFields("id", "name", "tasks") match {
+        case Seq(JsNumber(id), JsString(name), JsArray(tasks)) =>
+
+      }
+    }
+
+    override def write(obj: WorkflowView): JsValue = ???
+  }
+}*/
 
 class RouterActor extends Actor {
   implicit val timeout = Timeout(10 seconds)
@@ -53,10 +84,14 @@ class RouterActor extends Actor {
   def initialized: Receive = {
     case GetWorkflows =>
       val senderRef = sender()
-      val f = Future.sequence(context.children map {c => (c ? GetWorkflows).mapTo[String]})
+      val f = Future.sequence(context.children map {c => (c ? GetWorkflows).mapTo[WorkflowViews]})
       f onSuccess {
         case workflows =>
-          senderRef ! workflows
+          val wfExtract = for {
+            wfs <- workflows
+            wf <- wfs.wfViews
+          } yield wf
+          senderRef ! WorkflowViews(wfExtract toList)
       }
     case CreateWorkflow(wfDef) =>
       router.route(CreateWorkflowExtended(wfDef, idGenerator.nextId), sender())
@@ -69,14 +104,17 @@ object ViewActor {
 
 class ViewActor(index: Int) extends Actor {
   val engineChild = context.actorOf(Props[EngineActor])
+  var wfViews: Seq[WorkflowView] = List.empty[WorkflowView]
 
   def receive = {
     case GetWorkflows =>
-      sender() ! "List of workflows"
+      sender() ! WorkflowViews(wfViews)
     case msg: CreateWorkflowExtended =>
       engineChild forward msg
     case msg: IdAllocatorActorRef =>
       engineChild ! msg
+    case WorkflowViews(views) =>
+      wfViews = views
   }
 }
 
@@ -94,7 +132,8 @@ class EngineActor extends Actor {
       engine = new Engine()
       context.system.scheduler.scheduleOnce(1 second, self, ExecuteRound)
     case ExecuteRound =>
-      engine.executeRound
+      val updatedWfs = engine.executeRound
+      context.parent ! WorkflowViews(updatedWfs map (wf => new WorkflowView(wf)) toList)
       context.system.scheduler.scheduleOnce(1 second, self, ExecuteRound)
   }
 }
@@ -157,4 +196,27 @@ class IdAllocatorActor extends Actor {
   }
 }
 
+class WorkflowView(wf: Workflow) {
+  class TaskView(task: Task) {
+    val id = task.id
+    val state = task.state
+    val name = task.taskDef.name
+
+    def toJson = JsObject(
+      "id" -> JsNumber(id),
+      "name" -> JsString(name),
+      "state" -> JsString(state.toString)
+    )
+  }
+
+  val id = wf.id
+  val name = wf.workflowDef.name
+  val tasks = wf.tasks map (t => (t.id, new TaskView(t))) toMap
+
+  def toJson = JsObject(
+    "id" -> JsNumber(id),
+    "name" -> JsString(name),
+    "tasks" -> JsArray(tasks.values map (t => t.toJson) toVector)
+  )
+}
 
