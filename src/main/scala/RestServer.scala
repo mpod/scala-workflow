@@ -5,8 +5,9 @@ import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import akka.pattern.ask
 import spray.json._
-import actors.{IdAllocatorActor, WorkflowView}
+import actors.IdAllocatorActor
 import actors.WorkflowProtocol.{CreateWorkflow, GetWorkflows, IdAllocatorActorRef, WorkflowViews}
+import actors.WorkflowJsonProtocol._
 import definitions.ExampleWorkflow
 
 import scala.concurrent.duration._
