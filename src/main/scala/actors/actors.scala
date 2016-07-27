@@ -1,7 +1,5 @@
 package actors
 
-import java.awt.Color
-
 import actors.WorkflowProtocol._
 import akka.actor.{Actor, ActorRef, Props}
 import akka.pattern.ask
@@ -9,7 +7,7 @@ import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
 import akka.routing._
 import akka.util.Timeout
 import engine._
-import spray.json.{DefaultJsonProtocol, DeserializationException, JsArray, JsNumber, JsObject, JsString, JsValue, RootJsonFormat}
+import spray.json._
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
@@ -27,31 +25,39 @@ object WorkflowProtocol {
   case class WorkflowViews(wfViews: Seq[WorkflowView])
 }
 
-/*
 object WorkflowJsonProtocol extends DefaultJsonProtocol {
-  implicit object WorkflowViewsJsonFormat extends RootJsonFormat[WorkflowViews] {
-    def write(c: WorkflowViews) = JsArray(
-    )
-    def read(value: JsValue) = {
-      value.asJsObject.getFields("name", "red", "green", "blue") match {
-        case Seq(JsString(name), JsNumber(red), JsNumber(green), JsNumber(blue)) =>
-          new WorkflowViews()
-        case _ => throw new DeserializationException("Color expected")
-      }
-    }
+  implicit object TaskViewJsonFormat extends RootJsonFormat[TaskView] {
+    override def write(tView: TaskView): JsValue =
+      JsObject("name" -> JsString(tView.name), "id" -> JsNumber(tView.id), "state" -> JsString(tView.state.toString))
+
+    override def read(json: JsValue): TaskView = deserializationError("Not implemented")
   }
 
   implicit object WorkflowViewJsonFormat extends RootJsonFormat[WorkflowView] {
-    override def read(json: JsValue): WorkflowView = {
-      json.asJsObject.getFields("id", "name", "tasks") match {
-        case Seq(JsNumber(id), JsString(name), JsArray(tasks)) =>
+    override def write(wfView: WorkflowView): JsValue =
+      JsObject(
+        "name" -> JsString(wfView.name),
+        "id" -> JsNumber(wfView.id),
+        "tasks" -> wfView.tasks.values.toList.toJson
+      )
 
-      }
-    }
-
-    override def write(obj: WorkflowView): JsValue = ???
+    override def read(json: JsValue): WorkflowView = deserializationError("Not implemented")
   }
-}*/
+
+  implicit val workflowViewsJsonFormat = jsonFormat1(WorkflowViews)
+}
+
+class TaskView(task: Task) {
+  val id = task.id
+  val state = task.state
+  val name = task.taskDef.name
+}
+
+class WorkflowView(wf: Workflow) {
+  val id = wf.id
+  val name = wf.workflowDef.name
+  val tasks = wf.tasks map (t => (t.id, new TaskView(t))) toMap
+}
 
 class RouterActor extends Actor {
   implicit val timeout = Timeout(10 seconds)
@@ -196,27 +202,4 @@ class IdAllocatorActor extends Actor {
   }
 }
 
-class WorkflowView(wf: Workflow) {
-  class TaskView(task: Task) {
-    val id = task.id
-    val state = task.state
-    val name = task.taskDef.name
-
-    def toJson = JsObject(
-      "id" -> JsNumber(id),
-      "name" -> JsString(name),
-      "state" -> JsString(state.toString)
-    )
-  }
-
-  val id = wf.id
-  val name = wf.workflowDef.name
-  val tasks = wf.tasks map (t => (t.id, new TaskView(t))) toMap
-
-  def toJson = JsObject(
-    "id" -> JsNumber(id),
-    "name" -> JsString(name),
-    "tasks" -> JsArray(tasks.values map (t => t.toJson) toVector)
-  )
-}
 
