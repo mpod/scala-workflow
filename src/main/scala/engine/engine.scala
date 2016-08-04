@@ -159,6 +159,23 @@ class JoinTaskDefinition(n: Int) extends TaskDefinition {
   override def name: String = "Join"
 }
 
+class ManualTaskDefinition() extends TaskDefinition {
+  abstract class Field {
+    type FieldType
+    val name: String
+  }
+
+  class StringField(val name: String) extends Field {
+    type FieldType = String
+  }
+
+  override def action(context: TaskActionContext): Option[ActionResult] = {
+    None
+  }
+
+  override def name: String = "Manual"
+}
+
 final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow], val engine: Engine)
                     (implicit idGen: IdGenerator) extends LazyLogging {
   private var _tasks = List.empty[Task]
