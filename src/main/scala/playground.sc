@@ -27,6 +27,9 @@ List("a", "b", "c").mkString(", ")
 val a1 = List(1, 2, 3)
 val a2: Seq[Int] = List(4, 5, 6)
 
+a1.zip(a1.map(_.toString())).toMap
+
+
 a1 zip a2
 
 import spray.json._

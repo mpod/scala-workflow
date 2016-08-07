@@ -2,6 +2,8 @@ package engine
 
 import com.typesafe.scalalogging.LazyLogging
 
+import scala.collection.immutable.ListMap
+
 trait TreeNode {
   private var _parent: Option[TreeNode] = None
   private var _children: List[TreeNode] = List()
@@ -53,6 +55,8 @@ class Cache {
   def getStringVal(name: String): String = {
     _stringCache(name)
   }
+
+  def isValSet(name: String): Boolean = _intCache.contains(name) || _stringCache.contains(name)
 }
 
 abstract class ActionResult
@@ -162,18 +166,16 @@ class JoinTaskDefinition(n: Int) extends TaskDefinition {
 object ManualTaskDefinition {
   abstract class Field {
     type ValueType
-    var _isSet = false
-    def isSet = _isSet
     val label: String
     val name: String
     def setValue(value: ValueType)(implicit context: TaskActionContext)
+    def isSet(implicit context: TaskActionContext) = context.task.cache.isValSet(name)
   }
 
   class StringField(val label: String, val name: String) extends Field {
     type ValueType = String
     def setValue(value: ValueType)(implicit context: TaskActionContext): Unit = {
       context.task.cache.setStringVal(name, value)
-      _isSet = true
     }
   }
 
@@ -181,17 +183,27 @@ object ManualTaskDefinition {
     type ValueType = Int
     def setValue(value: ValueType)(implicit context: TaskActionContext): Unit = {
       context.task.cache.setIntVal(name, value)
-      _isSet = true
     }
   }
 }
 
 class ManualTaskDefinition(val fields: List[ManualTaskDefinition.Field]) extends TaskDefinition {
+  import ManualTaskDefinition._
+  val fieldsMap: Map[String, Field] = fields.map(_.name).zip(fields).toMap
+
   override def action(context: TaskActionContext): Option[ActionResult] = {
-    if (fields.forall(_.isSet)) Some(Ok) else None
+    if (allFieldsSet) Some(Ok) else None
   }
 
   override def name: String = "Manual"
+
+  def allFieldsSet = fields.forall(_.isSet)
+
+  def setField(name: String, value: Any) = (fieldsMap.get(name), value) match {
+    case (Some(f: IntField), v: Int) => f.setValue(v)
+    case (Some(f: StringField), v: String) => f.setValue(v)
+    case _ => throw new Exception("AAAA")
+  }
 }
 
 final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow], val engine: Engine)
@@ -231,6 +243,8 @@ final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow], val en
   def allExecuted: Boolean = isStarted && (_tasks forall (t => t.isExecuted))
 
   def endExecuted: Boolean = isStarted && (_tasks exists (t => t.taskDef == EndTaskDefinition && t.isExecuted))
+
+  def findTask(taskId: Int): Option[Task] = _tasks.find(_.id == taskId)
 }
 
 abstract class Service
@@ -261,6 +275,19 @@ class Engine(implicit idGen: IdGenerator) {
   } yield {
     wf.executeRound
     wf
+  }
+
+  def findWorkflow(wfId: Int) = _workflows.find(_.id == wfId)
+
+  def setManualTaskFields(wfId: Int, taskId: Int, values: Seq[(String, Any)]): Unit = {
+    val allFieldsSet = for {
+      wf <- findWorkflow(wfId)
+      task <- wf.findTask(taskId)
+      if task.taskDef.isInstanceOf[ManualTaskDefinition]
+      taskDef: ManualTaskDefinition = task.taskDef
+      (name, value) <- values
+      taskDef.setField(name, value)
+    } yield taskDef.allFieldsSet
   }
 }
 
