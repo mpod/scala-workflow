@@ -63,3 +63,38 @@ val json = new Color("CadetBlue", 95, 158, 160).toJson
 val color = json.convertTo[Color]
 
 new Team("team1", List(new Color("A", 1, 2, 3))).toJson
+
+trait A { self => def b(a: String) = a}
+
+val b2 = new {val r = 2} with A
+
+b2.b("222")
+
+val one: PartialFunction[Int, String] = { case 1 => "one" }
+
+one(1)
+
+val c1 = List(Option(1), Option("A"), None)
+
+val c2 = List(Option(1), Option("A"))
+
+c2.head.get match {
+  case a: Int => a + 2
+  case b: String => b
+}
+
+object O {
+  def f(p: String) = {
+    println(p)
+  }
+
+  def f(p: Int) = {
+    println(p)
+  }
+}
+
+class C1[T <: Int](p: T) {
+  O.f(p)
+}
+
+new C1(2)

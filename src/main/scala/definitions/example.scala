@@ -1,6 +1,8 @@
 package definitions
 
+import engine.ManualTaskDefinition.{IntField, StringField}
 import engine._
+
 import util.Random
 
 class WaitTaskDefinition(n: Int) extends TaskDefinition {
@@ -31,6 +33,13 @@ object ExampleWorkflow extends WorkflowDefinition {
   val proc2 = new ProcessTaskDefinition(context => {
     println("Reading %d from workflow cache".format(context.workflow.cache.getIntVal("n")))
   })
+
+  val man = new ManualTaskDefinition(
+    fields = List(
+      new StringField("Description", "Description"),
+      new IntField("MagicNumber", "Magic Number")
+    )
+  )
 
   override val transitions: Map[(TaskDefinition, ActionResult), List[TaskDefinition]] = Map(
     (StartTaskDefinition, Ok) -> List(branch),

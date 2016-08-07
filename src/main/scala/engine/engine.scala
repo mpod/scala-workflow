@@ -159,18 +159,36 @@ class JoinTaskDefinition(n: Int) extends TaskDefinition {
   override def name: String = "Join"
 }
 
-class ManualTaskDefinition() extends TaskDefinition {
+object ManualTaskDefinition {
   abstract class Field {
-    type FieldType
+    type ValueType
+    var _isSet = false
+    def isSet = _isSet
+    val label: String
     val name: String
+    def setValue(value: ValueType)(implicit context: TaskActionContext)
   }
 
-  class StringField(val name: String) extends Field {
-    type FieldType = String
+  class StringField(val label: String, val name: String) extends Field {
+    type ValueType = String
+    def setValue(value: ValueType)(implicit context: TaskActionContext): Unit = {
+      context.task.cache.setStringVal(name, value)
+      _isSet = true
+    }
   }
 
+  class IntField(val label: String, val name: String) extends Field {
+    type ValueType = Int
+    def setValue(value: ValueType)(implicit context: TaskActionContext): Unit = {
+      context.task.cache.setIntVal(name, value)
+      _isSet = true
+    }
+  }
+}
+
+class ManualTaskDefinition(val fields: List[ManualTaskDefinition.Field]) extends TaskDefinition {
   override def action(context: TaskActionContext): Option[ActionResult] = {
-    None
+    if (fields.forall(_.isSet)) Some(Ok) else None
   }
 
   override def name: String = "Manual"
