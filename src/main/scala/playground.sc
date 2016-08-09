@@ -101,3 +101,11 @@ class C1[T <: Int](p: T) {
 }
 
 new C1(2)
+
+c1.getClass.getCanonicalName
+
+for {
+  x <- 1 to 10
+} yield _
+
+1 to 5

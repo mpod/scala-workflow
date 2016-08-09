@@ -2,8 +2,6 @@ package engine
 
 import com.typesafe.scalalogging.LazyLogging
 
-import scala.collection.immutable.ListMap
-
 trait TreeNode {
   private var _parent: Option[TreeNode] = None
   private var _children: List[TreeNode] = List()
@@ -56,7 +54,7 @@ class Cache {
     _stringCache(name)
   }
 
-  def isValSet(name: String): Boolean = _intCache.contains(name) || _stringCache.contains(name)
+  def contains(name: String): Boolean = _intCache.contains(name) || _stringCache.contains(name)
 }
 
 abstract class ActionResult
@@ -89,6 +87,8 @@ final class Task(val taskDef: TaskDefinition, val workflow: Workflow)(implicit i
   private var _state: TaskState.Value = TaskState.New
   val cache = new Cache()
   val id = idGen.nextId
+
+  implicit def context() = new TaskActionContext(this)
 
   def state = _state
 
@@ -169,7 +169,7 @@ object ManualTaskDefinition {
     val label: String
     val name: String
     def setValue(value: ValueType)(implicit context: TaskActionContext)
-    def isSet(implicit context: TaskActionContext) = context.task.cache.isValSet(name)
+    def isSet(implicit context: TaskActionContext) = context.task.cache.contains(name)
   }
 
   class StringField(val label: String, val name: String) extends Field {
@@ -192,17 +192,24 @@ class ManualTaskDefinition(val fields: List[ManualTaskDefinition.Field]) extends
   val fieldsMap: Map[String, Field] = fields.map(_.name).zip(fields).toMap
 
   override def action(context: TaskActionContext): Option[ActionResult] = {
-    if (allFieldsSet) Some(Ok) else None
+    if (allFieldsSet(context)) Some(Ok) else None
   }
 
   override def name: String = "Manual"
 
-  def allFieldsSet = fields.forall(_.isSet)
+  def allFieldsSet(implicit context: TaskActionContext) = fields.forall(_.isSet)
 
-  def setField(name: String, value: Any) = (fieldsMap.get(name), value) match {
+  def setField(name: String, value: Any)(implicit context: TaskActionContext) = (fieldsMap.get(name), value) match {
     case (Some(f: IntField), v: Int) => f.setValue(v)
     case (Some(f: StringField), v: String) => f.setValue(v)
-    case _ => throw new Exception("AAAA")
+    case (Some(f), _) =>
+      throw new IllegalArgumentException(
+        "Field %s is of type %s, while given value is of type %s".format(
+          name, f.getClass.getName, value.getClass.getName
+        )
+      )
+    case (None, _) =>
+      throw new IllegalArgumentException("Field %s not found.".format(name))
   }
 }
 
@@ -280,14 +287,17 @@ class Engine(implicit idGen: IdGenerator) {
   def findWorkflow(wfId: Int) = _workflows.find(_.id == wfId)
 
   def setManualTaskFields(wfId: Int, taskId: Int, values: Seq[(String, Any)]): Unit = {
-    val allFieldsSet = for {
+    val taskDef = for {
       wf <- findWorkflow(wfId)
       task <- wf.findTask(taskId)
       if task.taskDef.isInstanceOf[ManualTaskDefinition]
-      taskDef: ManualTaskDefinition = task.taskDef
-      (name, value) <- values
-      taskDef.setField(name, value)
-    } yield taskDef.allFieldsSet
+    } yield (task.taskDef, task.context())
+
+    taskDef match {
+      case Some((td: ManualTaskDefinition, context: TaskActionContext)) =>
+        values.foreach(p => td.setField(p._1, p._2)(context))
+      case _ => throw new IllegalArgumentException("Not appropriate task found.")
+    }
   }
 }
 
