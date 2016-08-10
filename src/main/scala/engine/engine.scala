@@ -172,14 +172,14 @@ object ManualTaskDefinition {
     def isSet(implicit context: TaskActionContext) = context.task.cache.contains(name)
   }
 
-  class StringField(val label: String, val name: String) extends Field {
+  case class StringField(label: String, name: String) extends Field {
     type ValueType = String
     def setValue(value: ValueType)(implicit context: TaskActionContext): Unit = {
       context.task.cache.setStringVal(name, value)
     }
   }
 
-  class IntField(val label: String, val name: String) extends Field {
+  case class IntField(label: String, name: String) extends Field {
     type ValueType = Int
     def setValue(value: ValueType)(implicit context: TaskActionContext): Unit = {
       context.task.cache.setIntVal(name, value)
@@ -286,17 +286,32 @@ class Engine(implicit idGen: IdGenerator) {
 
   def findWorkflow(wfId: Int) = _workflows.find(_.id == wfId)
 
-  def setManualTaskFields(wfId: Int, taskId: Int, values: Seq[(String, Any)]): Unit = {
-    val taskDef = for {
-      wf <- findWorkflow(wfId)
-      task <- wf.findTask(taskId)
-      if task.taskDef.isInstanceOf[ManualTaskDefinition]
-    } yield (task.taskDef, task.context())
+  private def findManualTask(wfId: Int, taskId: Int): Option[Task] = for {
+    wf <- findWorkflow(wfId)
+    task <- wf.findTask(taskId)
+    if task.taskDef.isInstanceOf[ManualTaskDefinition]
+  } yield task
 
-    taskDef match {
-      case Some((td: ManualTaskDefinition, context: TaskActionContext)) =>
-        values.foreach(p => td.setField(p._1, p._2)(context))
-      case _ => throw new IllegalArgumentException("Not appropriate task found.")
+  def setManualTaskFields(wfId: Int, taskId: Int, values: Seq[(String, Any)]): Unit = {
+    findManualTask(wfId, taskId) match {
+      case Some(t) =>
+        val taskDef = t.taskDef
+        val context = t.context()
+        taskDef match {
+          case td: ManualTaskDefinition => values.foreach(p => td.setField(p._1, p._2)(context))
+          case _ => throw new UnknownError("Unexpected error.")
+        }
+      case None => throw new IllegalArgumentException("Manual task not found.")
+    }
+  }
+
+  def getManualTaskFields(wfId: Int, taskId: Int): Seq[ManualTaskDefinition.Field] = {
+    findManualTask(wfId, taskId) match {
+      case Some(t) => t.taskDef match {
+        case td: ManualTaskDefinition => td.fieldsMap.values.toSeq
+        case _ => throw new UnknownError("Unexpected error.")
+      }
+      case None => throw new IllegalArgumentException("Manual task not found.")
     }
   }
 }

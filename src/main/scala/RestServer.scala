@@ -45,6 +45,15 @@ object RestServer {
             }
           }
         }
+      } ~
+      pathPrefix("workflow" / IntNumber) { wfId =>
+        pathPrefix("task" / IntNumber) { taskId =>
+          pathEnd {
+            get {
+              complete("AAA %d %d".format(wfId, taskId))
+            }
+          }
+        }
       }
 
     val bindingFuture = Http().bindAndHandle(route, "localhost", 8080)
