@@ -27,40 +27,11 @@ object WorkflowProtocol {
 }
 
 object WorkflowJsonProtocol extends DefaultJsonProtocol {
-  implicit object TaskViewJsonFormat extends RootJsonFormat[TaskView] {
-    override def write(tView: TaskView): JsValue =
-      JsObject("name" -> JsString(tView.name), "id" -> JsNumber(tView.id), "state" -> JsString(tView.state.toString))
-
-    override def read(json: JsValue): TaskView = deserializationError("Not implemented")
-  }
-
-  implicit object WorkflowViewJsonFormat extends RootJsonFormat[WorkflowView] {
-    override def write(wfView: WorkflowView): JsValue =
-      JsObject(
-        "name" -> JsString(wfView.name),
-        "id" -> JsNumber(wfView.id),
-        "tasks" -> wfView.tasks.values.toList.toJson
-      )
-
-    override def read(json: JsValue): WorkflowView = deserializationError("Not implemented")
-  }
-
   implicit val workflowViewsJsonFormat = jsonFormat1(WorkflowViews)
-}
-
-
-class TaskView(task: Task) {
-  val id = task.id
-  val state = task.state
-  val name = task.taskDef.name
-}
-
-class WorkflowView(wf: Workflow) {
-  val id = wf.id
-  val name = wf.workflowDef.name
-  val tasks: Map[Int, TaskView] = {
-    wf.tasks map (t => (t.id, new TaskView(t))) toMap
-  }
+  implicit val workflowViewJsonFormat = jsonFormat2(WorkflowView)
+  implicit val taskViewJsonFormat = jsonFormat3(TaskView)
+  implicit val manualTaskViewJsonFormat = jsonFormat4(ManualTaskView)
+  implicit val manualTaskFieldViewJsonFormat = jsonFormat4(ManualTaskFieldView[_])
 }
 
 class RouterActor extends Actor {
@@ -143,7 +114,7 @@ class EngineActor extends Actor {
       context.system.scheduler.scheduleOnce(1 second, self, ExecuteRound)
     case ExecuteRound =>
       val updatedWfs = engine.executeRound
-      context.parent ! WorkflowViews(updatedWfs map (wf => new WorkflowView(wf)) toList)
+      context.parent ! WorkflowViews(updatedWfs.map(wf => wf.view))
       context.system.scheduler.scheduleOnce(1 second, self, ExecuteRound)
   }
 }

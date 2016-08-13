@@ -59,7 +59,7 @@ class Cache {
 
 sealed abstract class TaskViewBase
 case class TaskView(id: Int, state: String, defName: String) extends TaskViewBase
-case class ManualTaskView(id: Int, name: String, fields: Seq[ManualTaskFieldView[_]]) extends TaskViewBase
+case class ManualTaskView(id: Int, state:String, defName: String, fields: Seq[ManualTaskFieldView[_]]) extends TaskViewBase
 
 case class ManualTaskFieldView[T](name: String, label: String, value: Option[T], typeName: String)
 
@@ -235,6 +235,7 @@ class ManualTaskDefinition(val fields: List[ManualTaskDefinition.Field]) extends
   override def view(implicit context: TaskActionContext): TaskViewBase =
     ManualTaskView(
       context.task.id,
+      context.task.state.toString,
       name,
       fieldsMap.values.map(f => ManualTaskFieldView(f.name, f.label, f.value, f.typeName)).toSeq
     )
