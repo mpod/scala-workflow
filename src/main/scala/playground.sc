@@ -7,3 +7,4 @@ val a = A("a", "b")
 a.c
 
 throw new UnknownError("aaaa")
+

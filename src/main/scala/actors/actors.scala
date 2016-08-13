@@ -12,6 +12,7 @@ import spray.json._
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
+import scala.language.implicitConversions
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object WorkflowProtocol {
@@ -47,6 +48,7 @@ object WorkflowJsonProtocol extends DefaultJsonProtocol {
   implicit val workflowViewsJsonFormat = jsonFormat1(WorkflowViews)
 }
 
+
 class TaskView(task: Task) {
   val id = task.id
   val state = task.state
@@ -56,7 +58,9 @@ class TaskView(task: Task) {
 class WorkflowView(wf: Workflow) {
   val id = wf.id
   val name = wf.workflowDef.name
-  val tasks = wf.tasks map (t => (t.id, new TaskView(t))) toMap
+  val tasks: Map[Int, TaskView] = {
+    wf.tasks map (t => (t.id, new TaskView(t))) toMap
+  }
 }
 
 class RouterActor extends Actor {

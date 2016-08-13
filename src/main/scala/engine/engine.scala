@@ -57,6 +57,14 @@ class Cache {
   def contains(name: String): Boolean = _intCache.contains(name) || _stringCache.contains(name)
 }
 
+sealed abstract class TaskViewBase
+case class TaskView(id: Int, state: String, defName: String) extends TaskViewBase
+case class ManualTaskView(id: Int, name: String, fields: Seq[ManualTaskFieldView[_]]) extends TaskViewBase
+
+case class ManualTaskFieldView[T](name: String, label: String, value: Option[T], typeName: String)
+
+case class WorkflowView(id: Int, tasks: Map[Int, TaskViewBase])
+
 abstract class ActionResult
 case object Ok extends ActionResult
 case object Yes extends ActionResult
@@ -66,6 +74,8 @@ case object JoinIsWaiting extends ActionResult
 abstract class TaskDefinition {
   def action(context: TaskActionContext): Option[ActionResult]
   def name: String
+  def view(implicit context: TaskActionContext): TaskViewBase =
+    TaskView(context.task.id, context.task.state.toString, name)
 }
 
 abstract class WorkflowDefinition {
@@ -87,8 +97,9 @@ final class Task(val taskDef: TaskDefinition, val workflow: Workflow)(implicit i
   private var _state: TaskState.Value = TaskState.New
   val cache = new Cache()
   val id = idGen.nextId
+  private val _context = new TaskActionContext(this)
 
-  implicit def context() = new TaskActionContext(this)
+  implicit def context = _context
 
   def state = _state
 
@@ -96,7 +107,6 @@ final class Task(val taskDef: TaskDefinition, val workflow: Workflow)(implicit i
 
   def execute: Option[ActionResult] = {
     _state = TaskState.Running
-    val context = new TaskActionContext(this)
     val actionResult: Option[ActionResult] = taskDef.action(context)
     if (actionResult.isDefined) {
       logger.debug("Executed task \"%s\" with id %d".format(taskDef.name, id))
@@ -108,6 +118,8 @@ final class Task(val taskDef: TaskDefinition, val workflow: Workflow)(implicit i
   def isExecuted: Boolean = Set(TaskState.Done) contains _state
   override def toString = taskDef.name
   override def valueToString: String = taskDef.name
+
+  def view: TaskViewBase = taskDef.view
 }
 
 class ProcessTaskDefinition(func: (TaskActionContext) => Unit) extends TaskDefinition {
@@ -168,22 +180,30 @@ object ManualTaskDefinition {
     type ValueType
     val label: String
     val name: String
-    def setValue(value: ValueType)(implicit context: TaskActionContext)
+    def value_=(value: ValueType)(implicit context: TaskActionContext)
+    def value(implicit context: TaskActionContext): Option[ValueType]
     def isSet(implicit context: TaskActionContext) = context.task.cache.contains(name)
+    def typeName: String
   }
 
   case class StringField(label: String, name: String) extends Field {
     type ValueType = String
-    def setValue(value: ValueType)(implicit context: TaskActionContext): Unit = {
+    override def value_=(value: ValueType)(implicit context: TaskActionContext): Unit = {
       context.task.cache.setStringVal(name, value)
     }
+    override def value(implicit context: TaskActionContext): Option[String] =
+      Option(context.task.cache.getStringVal(name))
+    override def typeName = "String"
   }
 
   case class IntField(label: String, name: String) extends Field {
     type ValueType = Int
-    def setValue(value: ValueType)(implicit context: TaskActionContext): Unit = {
+    override def value_=(value: ValueType)(implicit context: TaskActionContext): Unit = {
       context.task.cache.setIntVal(name, value)
     }
+    override def value(implicit context: TaskActionContext): Option[Int] =
+      Option(context.task.cache.getIntVal(name))
+    override def typeName = "Int"
   }
 }
 
@@ -200,8 +220,8 @@ class ManualTaskDefinition(val fields: List[ManualTaskDefinition.Field]) extends
   def allFieldsSet(implicit context: TaskActionContext) = fields.forall(_.isSet)
 
   def setField(name: String, value: Any)(implicit context: TaskActionContext) = (fieldsMap.get(name), value) match {
-    case (Some(f: IntField), v: Int) => f.setValue(v)
-    case (Some(f: StringField), v: String) => f.setValue(v)
+    case (Some(f: IntField), v: Int) => f.value_=(v)
+    case (Some(f: StringField), v: String) => f.value_=(v)
     case (Some(f), _) =>
       throw new IllegalArgumentException(
         "Field %s is of type %s, while given value is of type %s".format(
@@ -211,6 +231,13 @@ class ManualTaskDefinition(val fields: List[ManualTaskDefinition.Field]) extends
     case (None, _) =>
       throw new IllegalArgumentException("Field %s not found.".format(name))
   }
+
+  override def view(implicit context: TaskActionContext): TaskViewBase =
+    ManualTaskView(
+      context.task.id,
+      name,
+      fieldsMap.values.map(f => ManualTaskFieldView(f.name, f.label, f.value, f.typeName)).toSeq
+    )
 }
 
 final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow], val engine: Engine)
@@ -252,6 +279,8 @@ final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow], val en
   def endExecuted: Boolean = isStarted && (_tasks exists (t => t.taskDef == EndTaskDefinition && t.isExecuted))
 
   def findTask(taskId: Int): Option[Task] = _tasks.find(_.id == taskId)
+
+  def view: WorkflowView = WorkflowView(id, _tasks.map(t => t.id -> t.view)(collection.breakOut))
 }
 
 abstract class Service
@@ -296,7 +325,7 @@ class Engine(implicit idGen: IdGenerator) {
     findManualTask(wfId, taskId) match {
       case Some(t) =>
         val taskDef = t.taskDef
-        val context = t.context()
+        val context = t.context
         taskDef match {
           case td: ManualTaskDefinition => values.foreach(p => td.setField(p._1, p._2)(context))
           case _ => throw new UnknownError("Unexpected error.")
