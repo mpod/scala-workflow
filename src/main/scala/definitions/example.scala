@@ -36,8 +36,8 @@ object ExampleWorkflow extends WorkflowDefinition {
 
   val man = new ManualTaskDefinition(
     fields = List(
-      new StringField("Description", "Description"),
-      new IntField("MagicNumber", "Magic Number")
+      StringField("Description", "Description"),
+      IntField("MagicNumber", "Magic Number")
     )
   )
 
