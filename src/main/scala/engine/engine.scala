@@ -242,6 +242,7 @@ class ManualTaskDefinition(val fields: List[ManualTaskDefinition.Field]) extends
       fieldsMap.values.map(f => f.value match {
         case Some(value: Int) => ManualTaskIntFieldView(f.name, f.label, Option(value), f.typeName)
         case Some(value: String) => ManualTaskStringFieldView(f.name, f.label, Option(value), f.typeName)
+        case _ => throw new UnsupportedOperationException("Unsupported field type.")
       }).toSeq
     )
 }

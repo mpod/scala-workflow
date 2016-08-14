@@ -28,9 +28,37 @@ object WorkflowProtocol {
 object WorkflowJsonProtocol extends DefaultJsonProtocol {
   implicit val manualTaskStringFieldViewJsonFormat = jsonFormat4(ManualTaskStringFieldView)
   implicit val manualTaskIntFieldViewJsonFormat = jsonFormat4(ManualTaskIntFieldView)
-  implicit def manualTaskViewJsonFormat[T <: ManualTaskFieldViewBase : JsonFormat] = jsonFormat4(ManualTaskView.apply[T])
+  implicit val manualTaskViewJsonFormat = new RootJsonFormat[ManualTaskView[_]] {
+    def write(t: ManualTaskView[_]) = JsObject(
+      "id" -> JsNumber(t.id),
+      "state" -> JsString(t.state),
+      "defName" -> JsString(t.defName),
+      "fields" -> JsArray(t.fields.map({
+        case f: ManualTaskIntFieldView => f.toJson
+        case f: ManualTaskStringFieldView => f.toJson
+        case _ => serializationError("Not supported.")
+      }).toVector)
+    )
+
+    def read(value: JsValue) = value match {
+      case _ => deserializationError("Not supported.")
+    }
+  }
   implicit val taskViewJsonFormat = jsonFormat3(TaskView)
-  implicit def workflowViewJsonFormat[T <: TaskViewBase : JsonFormat] = jsonFormat2(WorkflowView.apply[T])
+  implicit val workflowViewJsonFormat = new RootJsonFormat[WorkflowView[_]] {
+    def write(wf: WorkflowView[_]) = JsObject(
+      "id" -> JsNumber(wf.id),
+      "tasks" -> JsArray(wf.tasks.values.map({
+        case t: TaskView => t.toJson
+        case t: ManualTaskView[_] => manualTaskViewJsonFormat.write(t)
+        case _ => serializationError("Not supported.")
+      }).toVector)
+    )
+
+    def read(value: JsValue) = value match {
+      case _ => deserializationError("Not supported.")
+    }
+  }
 }
 
 class RouterActor extends Actor {
@@ -79,7 +107,7 @@ object ViewActor {
 
 class ViewActor(index: Int) extends Actor {
   val engineChild = context.actorOf(Props[EngineActor])
-  var wfViews: Seq[WorkflowView[TaskViewBase]] = List.empty
+  var wfViews: Seq[WorkflowView[_]] = List.empty
 
   def receive = {
     case GetWorkflows =>
@@ -88,8 +116,8 @@ class ViewActor(index: Int) extends Actor {
       engineChild forward msg
     case msg: IdAllocatorActorRef =>
       engineChild ! msg
-    case wfvs: Seq[WorkflowView[TaskViewBase]] =>
-      wfViews = wfvs
+    case views: Seq[WorkflowView[_]] @unchecked =>
+      wfViews = views
   }
 }
 
