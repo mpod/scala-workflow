@@ -23,15 +23,14 @@ object WorkflowProtocol {
   case object ExecuteRound
   case object AllocateIdBlock
   case class AllocatedIdBlock(identifiers: Seq[Int])
-  case class WorkflowViews(wfViews: Seq[WorkflowView])
 }
 
 object WorkflowJsonProtocol extends DefaultJsonProtocol {
-  implicit val workflowViewsJsonFormat = jsonFormat1(WorkflowViews)
-  implicit val workflowViewJsonFormat = jsonFormat2(WorkflowView)
+  implicit val manualTaskStringFieldViewJsonFormat = jsonFormat4(ManualTaskStringFieldView)
+  implicit val manualTaskIntFieldViewJsonFormat = jsonFormat4(ManualTaskIntFieldView)
+  implicit def manualTaskViewJsonFormat[T <: ManualTaskFieldViewBase : JsonFormat] = jsonFormat4(ManualTaskView.apply[T])
   implicit val taskViewJsonFormat = jsonFormat3(TaskView)
-  implicit val manualTaskViewJsonFormat = jsonFormat4(ManualTaskView)
-  implicit val manualTaskFieldViewJsonFormat = jsonFormat4(ManualTaskFieldView[_])
+  implicit def workflowViewJsonFormat[T <: TaskViewBase : JsonFormat] = jsonFormat2(WorkflowView.apply[T])
 }
 
 class RouterActor extends Actor {
@@ -65,14 +64,9 @@ class RouterActor extends Actor {
   def initialized: Receive = {
     case GetWorkflows =>
       val senderRef = sender()
-      val f = Future.sequence(context.children map {c => (c ? GetWorkflows).mapTo[WorkflowViews]})
+      val f = Future.sequence(context.children map {c => (c ? GetWorkflows).mapTo[Seq[WorkflowView[_]]]})
       f onSuccess {
-        case workflows =>
-          val wfExtract = for {
-            wfs <- workflows
-            wf <- wfs.wfViews
-          } yield wf
-          senderRef ! WorkflowViews(wfExtract toList)
+        case workflows => senderRef ! workflows.toList
       }
     case CreateWorkflow(wfDef) =>
       router.route(CreateWorkflowExtended(wfDef, idGenerator.nextId), sender())
@@ -85,17 +79,17 @@ object ViewActor {
 
 class ViewActor(index: Int) extends Actor {
   val engineChild = context.actorOf(Props[EngineActor])
-  var wfViews: Seq[WorkflowView] = List.empty[WorkflowView]
+  var wfViews: Seq[WorkflowView[TaskViewBase]] = List.empty
 
   def receive = {
     case GetWorkflows =>
-      sender() ! WorkflowViews(wfViews)
+      sender() ! wfViews
     case msg: CreateWorkflowExtended =>
       engineChild forward msg
     case msg: IdAllocatorActorRef =>
       engineChild ! msg
-    case WorkflowViews(views) =>
-      wfViews = views
+    case wfvs: Seq[WorkflowView[TaskViewBase]] =>
+      wfViews = wfvs
   }
 }
 
@@ -114,7 +108,7 @@ class EngineActor extends Actor {
       context.system.scheduler.scheduleOnce(1 second, self, ExecuteRound)
     case ExecuteRound =>
       val updatedWfs = engine.executeRound
-      context.parent ! WorkflowViews(updatedWfs.map(wf => wf.view))
+      context.parent ! updatedWfs.map(wf => wf.view)
       context.system.scheduler.scheduleOnce(1 second, self, ExecuteRound)
   }
 }

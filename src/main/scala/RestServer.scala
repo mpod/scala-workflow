@@ -6,9 +6,10 @@ import akka.util.Timeout
 import akka.pattern.ask
 import spray.json._
 import actors.IdAllocatorActor
-import actors.WorkflowProtocol.{CreateWorkflow, GetWorkflows, IdAllocatorActorRef, WorkflowViews}
+import actors.WorkflowProtocol.{CreateWorkflow, GetWorkflows, IdAllocatorActorRef}
 import actors.WorkflowJsonProtocol._
 import definitions.ExampleWorkflow
+import engine.{TaskViewBase, WorkflowView}
 
 import scala.concurrent.duration._
 import scala.io.StdIn
@@ -30,9 +31,9 @@ object RestServer {
       pathPrefix("workflows") {
         pathEnd {
           get {
-            onSuccess((router ? GetWorkflows).mapTo[WorkflowViews]) {
+            onSuccess((router ? GetWorkflows).mapTo[Seq[WorkflowView[TaskViewBase]]]) {
               workflowViews => {
-                val json = JsArray(workflowViews.wfViews map (view => view.toJson) toVector)
+                val json = JsArray(workflowViews.map(view => view.toJson).toVector)
                 complete(json.toString)
               }
             }

@@ -59,11 +59,13 @@ class Cache {
 
 sealed abstract class TaskViewBase
 case class TaskView(id: Int, state: String, defName: String) extends TaskViewBase
-case class ManualTaskView(id: Int, state:String, defName: String, fields: Seq[ManualTaskFieldView[_]]) extends TaskViewBase
+case class ManualTaskView[+T <: ManualTaskFieldViewBase](id: Int, state:String, defName: String, fields: Seq[T]) extends TaskViewBase
 
-case class ManualTaskFieldView[T](name: String, label: String, value: Option[T], typeName: String)
+sealed abstract class ManualTaskFieldViewBase
+case class ManualTaskStringFieldView(name: String, label: String, value: Option[String], typeName: String) extends ManualTaskFieldViewBase
+case class ManualTaskIntFieldView(name: String, label: String, value: Option[Int], typeName: String) extends ManualTaskFieldViewBase
 
-case class WorkflowView(id: Int, tasks: Map[Int, TaskViewBase])
+case class WorkflowView[+T <: TaskViewBase](id: Int, tasks: Map[Int, T])
 
 abstract class ActionResult
 case object Ok extends ActionResult
@@ -237,7 +239,10 @@ class ManualTaskDefinition(val fields: List[ManualTaskDefinition.Field]) extends
       context.task.id,
       context.task.state.toString,
       name,
-      fieldsMap.values.map(f => ManualTaskFieldView(f.name, f.label, f.value, f.typeName)).toSeq
+      fieldsMap.values.map(f => f.value match {
+        case Some(value: Int) => ManualTaskIntFieldView(f.name, f.label, Option(value), f.typeName)
+        case Some(value: String) => ManualTaskStringFieldView(f.name, f.label, Option(value), f.typeName)
+      }).toSeq
     )
 }
 
@@ -281,7 +286,7 @@ final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow], val en
 
   def findTask(taskId: Int): Option[Task] = _tasks.find(_.id == taskId)
 
-  def view: WorkflowView = WorkflowView(id, _tasks.map(t => t.id -> t.view)(collection.breakOut))
+  def view: WorkflowView[TaskViewBase] = WorkflowView(id, _tasks.map(t => t.id -> t.view)(collection.breakOut))
 }
 
 abstract class Service
