@@ -9,8 +9,7 @@ import actors.IdAllocatorActor
 import actors.WorkflowProtocol.{CreateWorkflow, GetWorkflows, IdAllocatorActorRef}
 import actors.WorkflowJsonProtocol._
 import definitions.ExampleWorkflow
-import engine.{TaskViewBase, WorkflowView}
-
+import engine.{TaskView, TaskViewBase, WorkflowView}
 import scala.concurrent.duration._
 import scala.io.StdIn
 import scala.language.postfixOps
@@ -31,7 +30,7 @@ object RestServer {
       pathPrefix("workflows") {
         pathEnd {
           get {
-            onSuccess((router ? GetWorkflows).mapTo[Seq[WorkflowView[TaskViewBase]]]) {
+            onSuccess((router ? GetWorkflows).mapTo[Seq[WorkflowView[TaskView]]]) {
               workflowViews => {
                 val json = JsArray(workflowViews.map(view => view.toJson).toVector)
                 complete(json.toString)
