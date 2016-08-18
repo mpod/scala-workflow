@@ -22,5 +22,6 @@ lazy val frontend = (project in file("frontend"))
   .settings(
     name := "play-backend",
     libraryDependencies ++= Dependencies.frontend,
+    routesGenerator := InjectedRoutesGenerator,
     commonSettings
   )
