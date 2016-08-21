@@ -20,7 +20,9 @@ object Dependencies {
 
   val webjars = Seq(
     "org.webjars" %% "webjars-play" % "2.5.0",
-    "org.webjars" % "bootstrap" % "3.3.7"
+    "org.webjars" % "jquery" % "3.1.0",
+    "org.webjars" % "font-awesome" % "4.6.3",
+    "org.webjars" % "bootstrap" % "3.3.7-1" exclude ("org.webjars", "jquery")
   )
 
   val tests = Seq(

@@ -20,7 +20,7 @@ lazy val backend = (project in file("backend"))
 lazy val frontend = (project in file("frontend"))
   .enablePlugins(PlayScala)
   .settings(
-    name := "play-backend",
+    name := "play-frontend",
     libraryDependencies ++= Dependencies.frontend,
     routesGenerator := InjectedRoutesGenerator,
     commonSettings
