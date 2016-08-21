@@ -1,0 +1,27 @@
+@(webJarAssets: WebJarAssets)(breadcrumb: Html)(content: Html)
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>scala-workflow</title>
+    <link rel='stylesheet' href='@routes.WebJarAssets.at(webJarAssets.locate("css/bootstrap.min.css"))'>
+    <link rel='stylesheet' href='@routes.WebJarAssets.at(webJarAssets.locate("css/font-awesome.min.css"))'>
+    <script src='@routes.WebJarAssets.at(webJarAssets.locate("jquery.min.js"))'></script>
+    <script src='@routes.WebJarAssets.at(webJarAssets.locate("js/bootstrap.min.js"))'></script>
+    <style>
+        body {
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>scala-workflow</h1>
+
+    @breadcrumb
+
+    @content
+
+</div>
+</body>
+</html>

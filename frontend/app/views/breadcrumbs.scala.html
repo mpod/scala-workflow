@@ -1,0 +1,14 @@
+@(wfId: Int = -1, taskId: Int = -1)
+<ol class="breadcrumb">
+    @if(wfId != -1){
+        <li><a href="@routes.Application.index()">Home</a></li>
+        @if(taskId != -1){
+            <li><a href="@routes.Application.workflow(wfId)">Workflow #@wfId</a></li>
+            <li class="active">Task #@taskId</li>
+        } else {
+            <li class="active">Workflow #@wfId</li>
+        }
+    } else {
+        <li class="active">Home</li>
+    }
+</ol>
