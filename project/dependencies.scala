@@ -3,7 +3,7 @@ import sbt._
 object Dependencies {
 
   object Version {
-    val akka = "2.4.8"
+    val akka = "2.4.9"
   }
 
   lazy val frontend = common ++ webjars ++ tests
@@ -11,6 +11,7 @@ object Dependencies {
 
   val common = Seq(
     "com.typesafe.akka" %% "akka-actor" % Version.akka,
+    "com.typesafe.akka" %% "akka-remote" % Version.akka,
     "com.typesafe.akka" %% "akka-testkit" % Version.akka,
     "com.typesafe.akka" %% "akka-http-experimental" % Version.akka,
     "com.typesafe.akka" %% "akka-http-spray-json-experimental" % Version.akka,

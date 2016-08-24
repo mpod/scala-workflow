@@ -8,14 +8,21 @@ lazy val root = (project in file("."))
       name := "scala-workflow",
       version := "1.0"
     )
-    .aggregate(backend, frontend)
+    .aggregate(common, backend, frontend)
+
+lazy val common = (project in file("common"))
+    .settings(
+      name := "api-common",
+      libraryDependencies ++= Dependencies.common,
+      commonSettings
+    )
 
 lazy val backend = (project in file("backend"))
   .settings(
     name := "akka-backend",
     libraryDependencies ++= Dependencies.backend,
     commonSettings
-  )
+  ).dependsOn(common)
 
 lazy val frontend = (project in file("frontend"))
   .enablePlugins(PlayScala)
@@ -24,4 +31,4 @@ lazy val frontend = (project in file("frontend"))
     libraryDependencies ++= Dependencies.frontend,
     routesGenerator := InjectedRoutesGenerator,
     commonSettings
-  )
+  ).dependsOn(common)
