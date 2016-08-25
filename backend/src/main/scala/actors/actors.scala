@@ -1,13 +1,14 @@
 package actors
 
-import actors.WorkflowProtocol._
+import actors.PrivateActorMessages._
 import akka.actor.{Actor, ActorRef, Props}
 import akka.pattern.ask
 import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
 import akka.routing._
 import akka.util.Timeout
+import common.PublicActorMessages._
+import definitions.{ExampleWorkflow, RandomWorkflow}
 import engine._
-import spray.json._
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
@@ -15,50 +16,12 @@ import scala.language.postfixOps
 import scala.language.implicitConversions
 import scala.concurrent.ExecutionContext.Implicits.global
 
-object WorkflowProtocol {
-  case object GetWorkflows
-  case class CreateWorkflow(wfDef: WorkflowDefinition)
+object PrivateActorMessages {
   case class IdAllocatorActorRef(ref: ActorRef)
-  case class CreateWorkflowExtended(wfDef: WorkflowDefinition, id: Int)
+  case class CreateWorkflowExtended(wfDefName: String, id: Int)
   case object ExecuteRound
   case object AllocateIdBlock
   case class AllocatedIdBlock(identifiers: Seq[Int])
-}
-
-object WorkflowJsonProtocol extends DefaultJsonProtocol {
-  implicit val manualTaskStringFieldViewJsonFormat = jsonFormat4(ManualTaskStringFieldView)
-  implicit val manualTaskIntFieldViewJsonFormat = jsonFormat4(ManualTaskIntFieldView)
-  implicit val manualTaskViewJsonFormat = new RootJsonFormat[ManualTaskView[_]] {
-    def write(t: ManualTaskView[_]) = JsObject(
-      "id" -> JsNumber(t.id),
-      "state" -> JsString(t.state),
-      "defName" -> JsString(t.defName),
-      "fields" -> JsArray(t.fields.map({
-        case f: ManualTaskIntFieldView => f.toJson
-        case f: ManualTaskStringFieldView => f.toJson
-        case _ => serializationError("Not supported.")
-      }).toVector)
-    )
-
-    def read(value: JsValue) = value match {
-      case _ => deserializationError("Not supported.")
-    }
-  }
-  implicit val taskViewJsonFormat = jsonFormat3(TaskView)
-  implicit val workflowViewJsonFormat = new RootJsonFormat[WorkflowView[_]] {
-    def write(wf: WorkflowView[_]) = JsObject(
-      "id" -> JsNumber(wf.id),
-      "tasks" -> JsArray(wf.tasks.values.map({
-        case t: TaskView => t.toJson
-        case t: ManualTaskView[_] => manualTaskViewJsonFormat.write(t)
-        case _ => serializationError("Not supported.")
-      }).toVector)
-    )
-
-    def read(value: JsValue) = value match {
-      case _ => deserializationError("Not supported.")
-    }
-  }
 }
 
 class RouterActor extends Actor {
@@ -66,7 +29,7 @@ class RouterActor extends Actor {
   var idGenerator: ActorBasedIdGenerator = _
 
   def hashMapping: ConsistentHashMapping = {
-    case CreateWorkflowExtended(wfDef, id) => id
+    case CreateWorkflowExtended(wfDefName, id) => id
   }
 
   var router = {
@@ -96,8 +59,8 @@ class RouterActor extends Actor {
       f onSuccess {
         case workflows => senderRef ! workflows.toList
       }
-    case CreateWorkflow(wfDef) =>
-      router.route(CreateWorkflowExtended(wfDef, idGenerator.nextId), sender())
+    case CreateWorkflow(wfDefName) =>
+      router.route(CreateWorkflowExtended(wfDefName, idGenerator.nextId), sender())
   }
 }
 
@@ -124,12 +87,18 @@ class ViewActor(index: Int) extends Actor {
 class EngineActor extends Actor {
   implicit var idGenerator: ActorBasedIdGenerator = _
   var engine: Engine = _
+  val wfDefs = List(ExampleWorkflow, RandomWorkflow)
 
   def receive = {
-    case CreateWorkflowExtended(wfDef, id) =>
+    case CreateWorkflowExtended(wfDefName, id) =>
       idGenerator.forceNextId(id)
-      engine.startWorkflow(wfDef)
-      sender() ! s"Created workflow $id"
+      wfDefs.find(_.name == wfDefName) match {
+        case Some(wfDef) =>
+          engine.startWorkflow(wfDef)
+          sender() ! s"Created workflow $id"
+        case None =>
+          sender() ! s"Workflow not found"
+      }
     case IdAllocatorActorRef(ref) =>
       idGenerator = new ActorBasedIdGenerator(ref)
       engine = new Engine()
