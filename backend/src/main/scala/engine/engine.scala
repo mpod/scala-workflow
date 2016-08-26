@@ -1,6 +1,7 @@
 package engine
 
 import com.typesafe.scalalogging.LazyLogging
+import common.Views._
 
 trait TreeNode {
   private var _parent: Option[TreeNode] = None
@@ -56,16 +57,6 @@ class Cache {
 
   def contains(name: String): Boolean = _intCache.contains(name) || _stringCache.contains(name)
 }
-
-sealed abstract class ManualTaskFieldViewBase
-case class ManualTaskStringFieldView(name: String, label: String, value: Option[String], typeName: String) extends ManualTaskFieldViewBase
-case class ManualTaskIntFieldView(name: String, label: String, value: Option[Int], typeName: String) extends ManualTaskFieldViewBase
-
-sealed abstract class TaskViewBase
-case class TaskView(id: Int, state: String, defName: String) extends TaskViewBase
-case class ManualTaskView[+T <: ManualTaskFieldViewBase](id: Int, state:String, defName: String, fields: Seq[T]) extends TaskViewBase
-
-case class WorkflowView[+T <: TaskViewBase](id: Int, tasks: Map[Int, T])
 
 abstract class ActionResult
 case object Ok extends ActionResult
@@ -240,8 +231,8 @@ class ManualTaskDefinition(val fields: List[ManualTaskDefinition.Field]) extends
       context.task.state.toString,
       name,
       fieldsMap.values.map(f => f.value match {
-        case Some(value: Int) => ManualTaskIntFieldView(f.name, f.label, Option(value), f.typeName)
-        case Some(value: String) => ManualTaskStringFieldView(f.name, f.label, Option(value), f.typeName)
+        case Some(value: Int) => ManualTaskIntFieldView(f.name, f.label, Option(value))
+        case Some(value: String) => ManualTaskStringFieldView(f.name, f.label, Option(value))
         case _ => throw new UnsupportedOperationException("Unsupported field type.")
       }).toSeq
     )

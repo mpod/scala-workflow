@@ -7,6 +7,7 @@ import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
 import akka.routing._
 import akka.util.Timeout
 import common.PublicActorMessages._
+import common.Views.WorkflowView
 import definitions.{ExampleWorkflow, RandomWorkflow}
 import engine._
 
@@ -95,9 +96,9 @@ class EngineActor extends Actor {
       wfDefs.find(_.name == wfDefName) match {
         case Some(wfDef) =>
           engine.startWorkflow(wfDef)
-          sender() ! s"Created workflow $id"
+          sender() ! StartedWorkflow(wfDefName, id)
         case None =>
-          sender() ! s"Workflow not found"
+          sender() ! Error(s"Workflow definition $wfDefName not found.")
       }
     case IdAllocatorActorRef(ref) =>
       idGenerator = new ActorBasedIdGenerator(ref)
