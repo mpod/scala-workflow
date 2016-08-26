@@ -15,7 +15,7 @@ object Views {
   object ViewsJsonProtocol extends DefaultJsonProtocol {
     implicit val manualTaskStringFieldViewJsonFormat = jsonFormat3(ManualTaskStringFieldView)
     implicit val manualTaskIntFieldViewJsonFormat = jsonFormat3(ManualTaskIntFieldView)
-    implicit val manualTaskViewJsonFormat = new RootJsonWriter[ManualTaskView[_]] {
+    implicit val manualTaskViewJsonFormat = new RootJsonFormat[ManualTaskView[_]] {
       def write(t: ManualTaskView[_]) = JsObject(
         "id" -> JsNumber(t.id),
         "state" -> JsString(t.state),
@@ -26,9 +26,13 @@ object Views {
           case _ => serializationError("Not supported.")
         }).toVector)
       )
+
+      def read(value: JsValue) = value match {
+        case _ => deserializationError("Not supported.")
+      }
     }
     implicit val taskViewJsonFormat = jsonFormat3(TaskView)
-    implicit val workflowViewJsonFormat = new RootJsonWriter[WorkflowView[_]] {
+    implicit val workflowViewJsonFormat = new RootJsonFormat[WorkflowView[_]] {
       def write(wf: WorkflowView[_]) = JsObject(
         "id" -> JsNumber(wf.id),
         "tasks" -> JsArray(wf.tasks.map({
@@ -37,6 +41,10 @@ object Views {
           case _ => serializationError("Not supported.")
         }).toVector)
       )
+
+      def read(value: JsValue) = value match {
+        case _ => deserializationError("Not supported.")
+      }
     }
   }
 }

@@ -278,7 +278,7 @@ final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow], val en
 
   def findTask(taskId: Int): Option[Task] = _tasks.find(_.id == taskId)
 
-  def view: WorkflowView[TaskViewBase] = WorkflowView(id, _tasks.map(t => t.id -> t.view)(collection.breakOut))
+  def view: WorkflowView[TaskViewBase] = WorkflowView(id, _tasks.map(t => t.view))
 }
 
 abstract class Service
