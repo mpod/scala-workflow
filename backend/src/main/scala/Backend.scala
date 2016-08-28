@@ -1,5 +1,5 @@
 import akka.actor.{Actor, ActorSystem, Props}
-import common.PublicActorMessages.{CreateWorkflow, GetWorkflows, StartedWorkflow, Workflows}
+import common.PublicActorMessages._
 import common.Views._
 
 import scala.concurrent.Await
@@ -77,6 +77,8 @@ class Mockup extends Actor {
   def receive = {
     case CreateWorkflow(wfDefName) =>
       sender() ! StartedWorkflow(wfDefName, 2)
+    case GetWorkflowDefinitions =>
+      sender() ! WorkflowDefinitions(workflowNames)
     case GetWorkflows =>
       sender() ! Workflows(workflows)
   }

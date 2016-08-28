@@ -1,48 +1,57 @@
 @import common.Views._
-@(workflows: Seq[WorkflowView], webJarAssets: WebJarAssets)
+@(workflows: Seq[WorkflowView], wfDefNames: Seq[String], webJarAssets: WebJarAssets)
 @main(webJarAssets)(breadcrumbs()) {
-    <div class="panel panel-default">
-        <div class="panel-heading">
-            <h3 class="panel-title">Start a workflow</h3>
-        </div>
-        <div class="panel-body">
-            <div class="col-sm-6" style="border-color: #ddd;">
-                <p>Example workflow</p>
-                <p>Aut et earum voluptas quod porro et. Est ab voluptatibus ea enim. Assumenda totam expedita inventore
-                    quis nostrum. Nihil eaque autem necessitatibus aut fuga id qui deserunt.</p>
-                <button type="submit" class="btn btn-primary">Start</button>
-            </div>
-            <div class="col-sm-6" style="border-color: #ddd;">
-                <p>Example workflow</p>
-                <p>Eaque dolores rerum asperiores mollitia. Quis commodi porro reprehenderit saepe nisi id
-                    necessitatibus exercitationem. Ut expedita eum quis et maiores ut itaque exercitationem. Deserunt
-                    fugit eaque dolor quidem tenetur et vel nam.</p>
-                <button type="submit" class="btn btn-primary">Start</button>
-            </div>
-        </div>
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <h3 class="panel-title">Start a workflow</h3>
     </div>
+    <div class="panel-body">
+        <form>
+            <div class="row">
+                <div class="form-group col-md-8">
+                    <label for="exampleInputEmail1">Workflow description</label>
+                    <input type="email"
+                           placeholder="Description"
+                           id="exampleInputEmail1"
+                           class="form-control">
+                </div>
+            </div>
+            <div class="row">
+                <div class="form-group col-md-8">
+                    <label for="select2">Workflow definition</label>
+                    <select class="form-control" id="select2">
+                        @for(defName <- wfDefNames) {
+                        <option>@defName</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+    </div>
+</div>
 
-    <div class="panel panel-default">
-        <div class="panel-heading">
-            <h3 class="panel-title">Active workflows</h3>
-        </div>
-        <table class="table table-bordered">
-            <thead>
-            <tr>
-                <th style="width: 60px; text-align: center;">ID</th>
-                <th>Name</th>
-                <th style="width: 200px;">Status</th>
-            </tr>
-            </thead>
-            <tbody>
-            @for(wf <- workflows) {
-            <tr>
-                <th scope="row" style="text-align: center;">@wf.id</th>
-                <td><a href="@routes.Application.workflow(wf.id)">@wf.name</a></td>
-                <td>@wf.state</td>
-            </tr>
-            }
-            </tbody>
-        </table>
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <h3 class="panel-title">Active workflows</h3>
     </div>
+    <table class="table table-bordered">
+        <thead>
+        <tr>
+            <th style="width: 60px; text-align: center;">ID</th>
+            <th>Name</th>
+            <th style="width: 200px;">Status</th>
+        </tr>
+        </thead>
+        <tbody>
+        @for(wf <- workflows) {
+        <tr>
+            <th scope="row" style="text-align: center;">@wf.id</th>
+            <td><a href="@routes.Application.workflow(wf.id)">@wf.name</a></td>
+            <td>@wf.state</td>
+        </tr>
+        }
+        </tbody>
+    </table>
+</div>
 }

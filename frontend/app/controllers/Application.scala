@@ -6,11 +6,12 @@ import akka.actor.ActorSystem
 import play.api.mvc._
 import akka.pattern.ask
 import akka.util.Timeout
-import common.PublicActorMessages.{Error, GetWorkflows, Workflows}
+import common.PublicActorMessages._
 import spray.json._
 import common.Views.ViewsJsonProtocol._
 import common.Views.{ManualTaskView, TaskViewBase, WorkflowView}
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
@@ -20,13 +21,16 @@ class Application @Inject() (webJarAssets: WebJarAssets, system: ActorSystem)  e
   val actorPath = "akka.tcp://workflows@127.0.0.1:2662/user/mockup"
 
   def index = Action.async { implicit request =>
-    (system.actorSelection(actorPath) ? GetWorkflows).mapTo[Workflows].map({
-      case Workflows(workflows) => Ok(views.html.index(workflows, webJarAssets))
-    })
+    val actorRef = system.actorSelection(actorPath)
+    for {
+      wfs <- (actorRef ? GetWorkflows).mapTo[Workflows]
+      wfDefs <- (actorRef ? GetWorkflowDefinitions).mapTo[WorkflowDefinitions]
+    } yield Ok(views.html.index(wfs.wfViews, wfDefs.wfDefNames, webJarAssets))
   }
 
   def workflow(wfId: Int) = Action.async { implicit request =>
-    (system.actorSelection(actorPath) ? GetWorkflows).mapTo[Workflows].map({
+    val actorRef = system.actorSelection(actorPath)
+    (actorRef ? GetWorkflows).mapTo[Workflows].map({
       case Workflows(workflows) =>
         workflows.find(wf => wf.id == wfId) match {
           case Some(wf: WorkflowView) => Ok(views.html.workflow(wf, webJarAssets))

@@ -63,6 +63,8 @@ object Views {
 }
 
 object PublicActorMessages {
+  case object GetWorkflowDefinitions
+  case class WorkflowDefinitions(wfDefNames: Seq[String])
   case object GetWorkflows
   case class Workflows(wfViews: Seq[WorkflowView])
   case class CreateWorkflow(wfDefName: String)
