@@ -29,7 +29,7 @@ object RestServer {
     router ! IdAllocatorActorRef(idAllocator)
 
     val route =
-      pathPrefix("workflows") {
+      /*pathPrefix("workflows") {
         pathEnd {
           get {
             onSuccess((router ? GetWorkflows).mapTo[Seq[WorkflowView[_]]]) {
@@ -47,7 +47,7 @@ object RestServer {
             }
           }
         }
-      } ~
+      } ~*/
       pathPrefix("workflow" / IntNumber) { wfId =>
         pathPrefix("task" / IntNumber) { taskId =>
           pathEnd {

@@ -1,5 +1,5 @@
 @import common.Views._
-@(wf: WorkflowView[_], task: ManualTaskView[ManualTaskFieldViewBase], webJarAssets: WebJarAssets)
+@(wf: WorkflowView, task: ManualTaskView, webJarAssets: WebJarAssets)
 @main(webJarAssets)(breadcrumbs(wf.id, task.id)) {
     <div class="panel panel-default">
         <div class="panel-heading">

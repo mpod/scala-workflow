@@ -1,5 +1,5 @@
 @import common.Views._
-@(workflow: WorkflowView[TaskViewBase], webJarAssets: WebJarAssets)
+@(workflow: WorkflowView, webJarAssets: WebJarAssets)
 @main(webJarAssets)(breadcrumbs(workflow.id)) {
     <div class="panel panel-default">
         <div class="panel-heading">
@@ -19,7 +19,7 @@
                 <th scope="row" style="text-align: center;">@task.id</th>
                 <td>
                     @task match {
-                    case t: ManualTaskView[_] => { <a href="@routes.Application.task(workflow.id, task.id)">@task.defName</a> }
+                    case t: ManualTaskView => { <a href="@routes.Application.task(workflow.id, task.id)">@task.defName</a> }
                     case t: TaskView => { @task.defName }
                     }
                 </td>

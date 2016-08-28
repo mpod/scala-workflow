@@ -21,15 +21,14 @@ object Views {
     val defName: String
   }
   case class TaskView(id: Int, state: String, defName: String) extends TaskViewBase
-  case class ManualTaskView[+T <: ManualTaskFieldViewBase](id: Int, state: String, defName: String, fields: Seq[T]) extends TaskViewBase
-
-  case class WorkflowView[+T <: TaskViewBase](id: Int, name: String, state: String, tasks: Seq[T])
+  case class ManualTaskView(id: Int, state: String, defName: String, fields: Seq[ManualTaskFieldViewBase]) extends TaskViewBase
+  case class WorkflowView(id: Int, name: String, state: String, tasks: Seq[TaskViewBase])
 
   object ViewsJsonProtocol extends DefaultJsonProtocol {
     implicit val manualTaskStringFieldViewJsonFormat = jsonFormat3(ManualTaskStringFieldView)
     implicit val manualTaskIntFieldViewJsonFormat = jsonFormat3(ManualTaskIntFieldView)
-    implicit val manualTaskViewJsonFormat = new RootJsonFormat[ManualTaskView[_]] {
-      def write(t: ManualTaskView[_]) = JsObject(
+    implicit val manualTaskViewJsonFormat = new RootJsonFormat[ManualTaskView] {
+      def write(t: ManualTaskView) = JsObject(
         "id" -> JsNumber(t.id),
         "state" -> JsString(t.state),
         "defName" -> JsString(t.defName),
@@ -45,13 +44,13 @@ object Views {
       }
     }
     implicit val taskViewJsonFormat = jsonFormat3(TaskView)
-    implicit def workflowViewJsonFormat[T <: TaskViewBase] = new RootJsonFormat[WorkflowView[T]] {
-      def write(wf: WorkflowView[T]) = JsObject(
+    implicit def workflowViewJsonFormat = new RootJsonFormat[WorkflowView] {
+      def write(wf: WorkflowView) = JsObject(
         "id" -> JsNumber(wf.id),
         "state" -> JsString(wf.state),
         "tasks" -> JsArray(wf.tasks.map({
           case t: TaskView => t.toJson
-          case t: ManualTaskView[_] => manualTaskViewJsonFormat.write(t)
+          case t: ManualTaskView => manualTaskViewJsonFormat.write(t)
           case _ => serializationError("Not supported.")
         }).toVector)
       )
@@ -65,7 +64,7 @@ object Views {
 
 object PublicActorMessages {
   case object GetWorkflows
-  case class Workflows[+T <: TaskViewBase](wfViews: Seq[WorkflowView[T]])
+  case class Workflows(wfViews: Seq[WorkflowView])
   case class CreateWorkflow(wfDefName: String)
   case class StartedWorkflow(wfDefName: String, id: Int)
   case class Error(message: String)

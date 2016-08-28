@@ -56,7 +56,7 @@ class RouterActor extends Actor {
   def initialized: Receive = {
     case GetWorkflows =>
       val senderRef = sender()
-      val f = Future.sequence(context.children map {c => (c ? GetWorkflows).mapTo[Seq[WorkflowView[_]]]})
+      val f = Future.sequence(context.children map {c => (c ? GetWorkflows).mapTo[Seq[WorkflowView]]})
       f onSuccess {
         case workflows => senderRef ! workflows.toList
       }
@@ -71,7 +71,7 @@ object ViewActor {
 
 class ViewActor(index: Int) extends Actor {
   val engineChild = context.actorOf(Props[EngineActor])
-  var wfViews: Seq[WorkflowView[_]] = List.empty
+  var wfViews: Seq[WorkflowView] = List.empty
 
   def receive = {
     case GetWorkflows =>
@@ -80,7 +80,7 @@ class ViewActor(index: Int) extends Actor {
       engineChild forward msg
     case msg: IdAllocatorActorRef =>
       engineChild ! msg
-    case views: Seq[WorkflowView[_]] @unchecked =>
+    case views: Seq[WorkflowView] @unchecked =>
       wfViews = views
   }
 }

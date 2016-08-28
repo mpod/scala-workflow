@@ -1,4 +1,5 @@
-@(workflows: Seq[common.Views.WorkflowView[_]], webJarAssets: WebJarAssets)
+@import common.Views._
+@(workflows: Seq[WorkflowView], webJarAssets: WebJarAssets)
 @main(webJarAssets)(breadcrumbs()) {
     <div class="panel panel-default">
         <div class="panel-heading">
