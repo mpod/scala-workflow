@@ -44,7 +44,7 @@ object Views {
       }
     }
     implicit val taskViewJsonFormat = jsonFormat3(TaskView)
-    implicit def workflowViewJsonFormat = new RootJsonFormat[WorkflowView] {
+    implicit val workflowViewJsonFormat = new RootJsonFormat[WorkflowView] {
       def write(wf: WorkflowView) = JsObject(
         "id" -> JsNumber(wf.id),
         "state" -> JsString(wf.state),

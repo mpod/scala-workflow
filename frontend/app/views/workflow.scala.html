@@ -1,6 +1,9 @@
 @import common.Views._
-@(workflow: WorkflowView, webJarAssets: WebJarAssets)
-@main(webJarAssets)(breadcrumbs(workflow.id)) {
+@(wf: WorkflowView, webJarAssets: WebJarAssets)
+@main(webJarAssets)(breadcrumbs(wf.id)) {
+    <blockquote>
+        <p>Workflow: @wf.name (#@wf.id)</p>
+    </blockquote>
     <div class="panel panel-default">
         <div class="panel-heading">
             <h3 class="panel-title">Tasks</h3>
@@ -14,12 +17,12 @@
             </tr>
             </thead>
             <tbody>
-            @for(task <- workflow.tasks) {
+            @for(task <- wf.tasks) {
             <tr>
                 <th scope="row" style="text-align: center;">@task.id</th>
                 <td>
                     @task match {
-                    case t: ManualTaskView => { <a href="@routes.Application.task(workflow.id, task.id)">@task.defName</a> }
+                    case t: ManualTaskView => { <a href="@routes.Application.task(wf.id, task.id)">@task.defName</a> }
                     case t: TaskView => { @task.defName }
                     }
                 </td>

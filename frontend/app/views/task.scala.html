@@ -1,9 +1,14 @@
 @import common.Views._
 @(wf: WorkflowView, task: ManualTaskView, webJarAssets: WebJarAssets)
 @main(webJarAssets)(breadcrumbs(wf.id, task.id)) {
+    <blockquote>
+        <p>Workflow: @wf.name (#@wf.id)<br/>Task: @task.defName (#@task.id)</p>
+    </blockquote>
     <div class="panel panel-default">
         <div class="panel-heading">
-            <h3 class="panel-title">Task attributes</h3>
+            <h3 class="panel-title">
+                Task attributes
+            </h3>
         </div>
         <div class="panel-body">
             <form>
