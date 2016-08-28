@@ -3,7 +3,6 @@ package definitions
 import engine._
 import util.Random
 
-
 object RandomIf extends TaskDefinition {
   override def action(context: TaskActionContext): Option[ActionResult] = if (new Random().nextBoolean) Option(Yes) else Option(No)
   override def name: String = "If"

@@ -1,4 +1,4 @@
-@(webJarAssets: WebJarAssets)
+@(workflows: Seq[common.Views.WorkflowView[_]], webJarAssets: WebJarAssets)
 @main(webJarAssets)(breadcrumbs()) {
     <div class="panel panel-default">
         <div class="panel-heading">
@@ -34,21 +34,13 @@
             </tr>
             </thead>
             <tbody>
+            @for(wf <- workflows) {
             <tr>
-                <th scope="row" style="text-align: center;">1</th>
-                <td><a href="#">Example workflow</a></td>
-                <td>Running</td>
+                <th scope="row" style="text-align: center;">@wf.id</th>
+                <td><a href="@routes.Application.workflow(wf.id)">@wf.name</a></td>
+                <td>@wf.state</td>
             </tr>
-            <tr>
-                <th scope="row" style="text-align: center;">2</th>
-                <td><a href="#">Example workflow</a></td>
-                <td>Waiting on manual task</td>
-            </tr>
-            <tr>
-                <th scope="row" style="text-align: center;">3</th>
-                <td><a href="#">Random workflow</a></td>
-                <td>Done</td>
-            </tr>
+            }
             </tbody>
         </table>
     </div>

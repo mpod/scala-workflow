@@ -24,6 +24,16 @@ class Mockup extends Actor {
   val taskStates = List("Open", "Closed")
   val taskDefNames = List("Interdum", "Pede", "Malesuada", "Amet", "Nunc", "Sit", "Adipiscing", "Curabitur",
     "Eros", "Eu", "Quam", "Egestas", "Vivamus", "Sed", "Reprehenderit")
+  val workflowStates = List("Waiting on manual task", "Finished", "Running")
+  val workflowNames = List(
+    "Proin iaculis nisi eu nisi lobortis",
+    "Etiam cursus libero sed diam volutpat",
+    "Integer eget sem ut libero imperdiet pretium.",
+    "Donec et nisi sed tortor commodo auctor.",
+    "Sed et quam semper, pellentesque ex non, molestie sem.",
+    "Aliquam dapibus tortor eget imperdiet molestie.",
+    "Nam finibus lorem quis suscipit sagittis."
+  )
 
   def choice[T](list: List[T]) = list(Random.nextInt(list.length))
 
@@ -59,14 +69,15 @@ class Mockup extends Actor {
 
   def genWorkflowView = {
     val tasks = (1 to Random.nextInt(20)) map (_ => genTaskView)
-    WorkflowView(Random.nextInt(100), tasks)
+    WorkflowView(Random.nextInt(100), choice(workflowNames), choice(workflowStates), tasks)
   }
+
+  val workflows = (1 to 20) map (_ => genWorkflowView)
 
   def receive = {
     case CreateWorkflow(wfDefName) =>
       sender() ! StartedWorkflow(wfDefName, 2)
     case GetWorkflows =>
-      val workflows = (1 to Random.nextInt(20)) map (_ => genWorkflowView)
       sender() ! Workflows(workflows)
   }
 }

@@ -1,5 +1,6 @@
-@(wfId: Int, webJarAssets: WebJarAssets)
-@main(webJarAssets)(breadcrumbs(wfId)) {
+@import common.Views._
+@(workflow: WorkflowView[TaskViewBase], webJarAssets: WebJarAssets)
+@main(webJarAssets)(breadcrumbs(workflow.id)) {
     <div class="panel panel-default">
         <div class="panel-heading">
             <h3 class="panel-title">Tasks</h3>
@@ -13,21 +14,18 @@
             </tr>
             </thead>
             <tbody>
+            @for(task <- workflow.tasks) {
             <tr>
-                <th scope="row" style="text-align: center;">1</th>
-                <td>Start</td>
-                <td>Running</td>
+                <th scope="row" style="text-align: center;">@task.id</th>
+                <td>
+                    @task match {
+                    case t: ManualTaskView[_] => { <a href="@routes.Application.task(workflow.id, task.id)">@task.defName</a> }
+                    case t: TaskView => { @task.defName }
+                    }
+                </td>
+                <td>@task.state</td>
             </tr>
-            <tr>
-                <th scope="row" style="text-align: center;">2</th>
-                <td><a href="#">Manual task</a></td>
-                <td>Waiting on manual task</td>
-            </tr>
-            <tr>
-                <th scope="row" style="text-align: center;">3</th>
-                <td>End</td>
-                <td>Done</td>
-            </tr>
+            }
             </tbody>
         </table>
     </div>

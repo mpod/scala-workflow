@@ -106,7 +106,7 @@ class EngineActor extends Actor {
       context.system.scheduler.scheduleOnce(1 second, self, ExecuteRound)
     case ExecuteRound =>
       val updatedWfs = engine.executeRound
-      context.parent ! updatedWfs.map(wf => wf.view)
+      //context.parent ! updatedWfs.map(wf => wf.view)
       context.system.scheduler.scheduleOnce(1 second, self, ExecuteRound)
   }
 }
