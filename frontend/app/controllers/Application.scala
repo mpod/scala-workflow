@@ -4,12 +4,14 @@ import javax.inject.Inject
 
 import akka.actor.ActorSystem
 import play.api.mvc._
+import play.api.data.Forms._
 import akka.pattern.ask
 import akka.util.Timeout
-import common.PublicActorMessages._
 import spray.json._
+import common.PublicActorMessages._
 import common.Views.ViewsJsonProtocol._
 import common.Views.{ManualTaskView, TaskViewBase, WorkflowView}
+import play.api.data.Form
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -19,6 +21,10 @@ class Application @Inject() (webJarAssets: WebJarAssets, system: ActorSystem)  e
   implicit val executionContext = system.dispatcher
   implicit val timeout = Timeout(10 seconds)
   val actorPath = "akka.tcp://workflows@127.0.0.1:2662/user/mockup"
+  val wfForm = Form(mapping(
+    "label" -> nonEmptyText,
+    "name" -> nonEmptyText
+  )(CreateWorkflow.apply)(CreateWorkflow.unapply))
 
   def index = Action.async { implicit request =>
     val actorRef = system.actorSelection(actorPath)
@@ -50,6 +56,13 @@ class Application @Inject() (webJarAssets: WebJarAssets, system: ActorSystem)  e
           case None => InternalServerError("Task not found.")
         }
     })
+  }
+
+  def createWorkflow() = Action { implicit request =>
+    wfForm.bindFromRequest.fold(
+      formWithErrors => Redirect(routes.Application.index()).flashing("error" -> "Failed workflow creation!"),
+      value => Redirect(routes.Application.index()).flashing("success" -> "Workflow created!")
+    )
   }
 
   def json = Action.async {

@@ -1,25 +1,34 @@
 @import common.Views._
-@(workflows: Seq[WorkflowView], wfDefNames: Seq[String], webJarAssets: WebJarAssets)
+@(workflows: Seq[WorkflowView], wfDefNames: Seq[String], webJarAssets: WebJarAssets)(implicit flash: Flash)
 @main(webJarAssets)(breadcrumbs()) {
+
+@if(flash.data.contains("success")) {
+    <div class="alert alert-success" role="alert">@flash.get("success")</div>
+}
+@if(flash.data.contains("error")) {
+    <div class="alert alert-danger" role="alert">@flash.get("error")</div>
+}
+
 <div class="panel panel-default">
     <div class="panel-heading">
         <h3 class="panel-title">Start a workflow</h3>
     </div>
     <div class="panel-body">
-        <form>
+        <form action="@routes.Application.createWorkflow()" method="post">
             <div class="row">
                 <div class="form-group col-md-8">
                     <label for="exampleInputEmail1">Workflow description</label>
-                    <input type="email"
+                    <input type="text"
                            placeholder="Description"
                            id="exampleInputEmail1"
+                           name="label"
                            class="form-control">
                 </div>
             </div>
             <div class="row">
                 <div class="form-group col-md-8">
                     <label for="select2">Workflow definition</label>
-                    <select class="form-control" id="select2">
+                    <select class="form-control" id="select2" name="name">
                         @for(defName <- wfDefNames) {
                         <option>@defName</option>
                         }
