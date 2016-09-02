@@ -22,7 +22,7 @@ object Views {
   }
   case class TaskView(id: Int, state: String, defName: String) extends TaskViewBase
   case class ManualTaskView(id: Int, state: String, defName: String, fields: Seq[ManualTaskFieldViewBase]) extends TaskViewBase
-  case class WorkflowView(id: Int, name: String, state: String, tasks: Seq[TaskViewBase])
+  case class WorkflowView(id: Int, name: String, label: String, state: String, tasks: Seq[TaskViewBase])
 
   object ViewsJsonProtocol extends DefaultJsonProtocol {
     implicit val manualTaskStringFieldViewJsonFormat = jsonFormat3(ManualTaskStringFieldView)
@@ -68,6 +68,5 @@ object PublicActorMessages {
   case object GetWorkflows
   case class Workflows(wfViews: Seq[WorkflowView])
   case class CreateWorkflow(wfDefName: String, label: String)
-  case class StartedWorkflow(wfDefName: String, id: Int)
   case class Error(message: String)
 }

@@ -58,10 +58,15 @@ class Application @Inject() (webJarAssets: WebJarAssets, system: ActorSystem)  e
     })
   }
 
-  def createWorkflow() = Action { implicit request =>
+  def createWorkflow() = Action.async { implicit request =>
     wfForm.bindFromRequest.fold(
-      formWithErrors => Redirect(routes.Application.index()).flashing("error" -> "Failed workflow creation!"),
-      value => Redirect(routes.Application.index()).flashing("success" -> "Workflow created!")
+      formWithErrors =>
+        Future(Redirect(routes.Application.index()).flashing("error" -> "Failed workflow creation!")),
+      value =>
+        (system.actorSelection(actorPath) ? value).mapTo[Workflows].map({
+          case Workflows(workflows) =>
+            Redirect(routes.Application.index()).flashing("success" -> "Workflow created!")
+        })
     )
   }
 

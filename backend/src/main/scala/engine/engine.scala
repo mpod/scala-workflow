@@ -67,8 +67,6 @@ case object JoinIsWaiting extends ActionResult
 abstract class TaskDefinition {
   def action(context: TaskActionContext): Option[ActionResult]
   def name: String
-//  def view(implicit context: TaskActionContext): TaskViewBase =
-//    TaskView(context.task.id, context.task.state.toString, name)
 }
 
 abstract class WorkflowDefinition {
@@ -111,8 +109,6 @@ final class Task(val taskDef: TaskDefinition, val workflow: Workflow)(implicit i
   def isExecuted: Boolean = Set(TaskState.Done) contains _state
   override def toString = taskDef.name
   override def valueToString: String = taskDef.name
-
-//  def view: TaskViewBase = taskDef.view
 }
 
 class ProcessTaskDefinition(func: (TaskActionContext) => Unit) extends TaskDefinition {
@@ -224,18 +220,6 @@ class ManualTaskDefinition(val fields: List[ManualTaskDefinition.Field]) extends
     case (None, _) =>
       throw new IllegalArgumentException("Field %s not found.".format(name))
   }
-
-//  override def view(implicit context: TaskActionContext): TaskViewBase =
-//    ManualTaskView(
-//      context.task.id,
-//      context.task.state.toString,
-//      name,
-//      fieldsMap.values.map(f => f.value match {
-//        case Some(value: Int) => ManualTaskIntFieldView(f.name, f.label, Option(value))
-//        case Some(value: String) => ManualTaskStringFieldView(f.name, f.label, Option(value))
-//        case _ => throw new UnsupportedOperationException("Unsupported field type.")
-//      }).toSeq
-//    )
 }
 
 final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow], val engine: Engine)
@@ -277,8 +261,6 @@ final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow], val en
   def endExecuted: Boolean = isStarted && (_tasks exists (t => t.taskDef == EndTaskDefinition && t.isExecuted))
 
   def findTask(taskId: Int): Option[Task] = _tasks.find(_.id == taskId)
-
-  //def view: WorkflowView[TaskViewBase] = WorkflowView(id, "name", "state", _tasks.map(t => t.view))
 }
 
 abstract class Service
