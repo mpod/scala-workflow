@@ -6,7 +6,7 @@ object Workflow {
   def main(args: Array[String]): Unit = {
     implicit val idGen = SimpleIdGenerator
     val engine = new Engine()
-    val wf = engine.startWorkflow(ExampleWorkflow)
+    val wf = engine.startWorkflow(ExampleWorkflow, "Label")
     var i = 1
 
     while (!wf.allExecuted) {

@@ -7,7 +7,7 @@ import akka.pattern.ask
 import spray.json._
 import actors.IdAllocatorActor
 import actors.PrivateActorMessages.IdAllocatorActorRef
-import common.PublicActorMessages.{CreateWorkflow, GetWorkflows}
+import common.PublicActorMessages.{StartWorkflow, GetWorkflows}
 import common.Views.ViewsJsonProtocol._
 import common.Views.WorkflowView
 import definitions.ExampleWorkflow

@@ -23,7 +23,7 @@ object TaskDefinition {
     var wf: Option[Workflow] = None
 
     override def action(context: TaskActionContext): Option[ActionResult] = wf match {
-      case None => wf = Some(context.engine.startWorkflow(wfDef, context.task.workflow)); None
+      case None => wf = Some(context.engine.startWorkflow(wfDef, "SubWorkflow", context.task.workflow)); None
       case Some(x) => if (x.endExecuted) Some(Ok) else None
     }
 

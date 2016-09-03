@@ -1,20 +1,24 @@
 package engine
 
+import definitions.{ExampleWorkflow, RandomWorkflow}
+
 class Engine(implicit idGen: IdGenerator) {
   private var _workflows = List.empty[Workflow]
 
+  def workflowDefinitions: Seq[WorkflowDefinition] = List(RandomWorkflow, ExampleWorkflow)
+
   def workflows = _workflows
 
-  def startWorkflow(wfDef: WorkflowDefinition): Workflow = {
-    startWorkflow(wfDef, None)
+  def startWorkflow(wfDef: WorkflowDefinition, label: String): Workflow = {
+    startWorkflow(wfDef, label, None)
   }
 
-  def startWorkflow(wfDef: WorkflowDefinition, parentWf: Workflow): Workflow = {
-    startWorkflow(wfDef, Some(parentWf))
+  def startWorkflow(wfDef: WorkflowDefinition, label: String, parentWf: Workflow): Workflow = {
+    startWorkflow(wfDef, label, Some(parentWf))
   }
 
-  def startWorkflow(wfDef: WorkflowDefinition, parentWf: Option[Workflow]): Workflow = {
-    val wf = new Workflow(wfDef, parentWf, this)
+  def startWorkflow(wfDef: WorkflowDefinition, label: String, parentWf: Option[Workflow]): Workflow = {
+    val wf = new Workflow(wfDef, label, parentWf, this)
     wf.start
     _workflows ::= wf
     wf

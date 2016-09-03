@@ -6,6 +6,8 @@ import engine.Task.TaskActionContext
 
 object ImplicitConversions {
 
+  implicit def toWorkflowViewSeq(wfSeq: Seq[Workflow]): Seq[WorkflowView] = wfSeq map toWorkflowView
+
   implicit def toWorkflowView(wf: Workflow): WorkflowView =
     WorkflowView(wf.id, wf.workflowDef.name, "Label", "State", wf.tasks map toTaskView)
 

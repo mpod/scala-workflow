@@ -3,7 +3,7 @@ package engine
 import com.typesafe.scalalogging.LazyLogging
 import engine.TaskDefinition.{EndTaskDefinition, StartTaskDefinition}
 
-final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow], val engine: Engine)
+final class Workflow(wfDef: WorkflowDefinition, val label: String, parent: Option[Workflow], val engine: Engine)
                     (implicit idGen: IdGenerator) extends LazyLogging {
 
   private var _tasks = List.empty[Task]
@@ -14,7 +14,7 @@ final class Workflow(wfDef: WorkflowDefinition, parent: Option[Workflow], val en
   def workflowDef = wfDef
   def parentWorkflow = parent
 
-  def this(wfDef: WorkflowDefinition, engine: Engine)(implicit idGen: IdGenerator) = this(wfDef, None, engine)
+  def this(wfDef: WorkflowDefinition, label: String, engine: Engine)(implicit idGen: IdGenerator) = this(wfDef, label, None, engine)
 
   def start: Task = {
     val task = new Task(StartTaskDefinition, this)

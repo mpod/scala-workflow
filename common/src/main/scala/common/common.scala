@@ -67,6 +67,6 @@ object PublicActorMessages {
   case class WorkflowDefinitions(wfDefNames: Seq[String])
   case object GetWorkflows
   case class Workflows(wfViews: Seq[WorkflowView])
-  case class CreateWorkflow(wfDefName: String, label: String)
+  case class StartWorkflow(wfDefName: String, label: String)
   case class Error(message: String)
 }

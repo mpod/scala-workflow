@@ -1,10 +1,15 @@
+import actors.PrivateActorMessages.ExecuteRound
 import akka.actor.{Actor, ActorSystem, Props}
 import common.PublicActorMessages._
 import common.Views._
+import engine.{Engine, IdGenerator}
+import engine.ImplicitConversions._
 
 import scala.concurrent.Await
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
+import scala.language.postfixOps
 import scala.util.Random
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class Mockup extends Actor {
   val fieldNames = List("Proin", "Etiam", "Integer", "Donec", "Sed", "Aliquam", "Nam", "Vivamus", "Aliquam")
@@ -74,13 +79,27 @@ class Mockup extends Actor {
 
   val workflows = (1 to 20) map (_ => genWorkflowView)
 
+  implicit val idGen = IdGenerator.SimpleIdGenerator
+
+  val engine = new Engine()
+
+  self ! ExecuteRound
+
   def receive = {
-    case CreateWorkflow(wfDefName, label) =>
-      sender() ! Workflows(List(genWorkflowView))
+    case StartWorkflow(wfDefName, label) =>
+      engine.workflowDefinitions.find(_.name == wfDefName) match {
+        case Some(wfDef) =>
+          val wf = engine.startWorkflow(wfDef, label)
+          sender() ! Workflows(List(wf))
+        case None => sender() ! Error("Invalid workflow definition name %s".format(wfDefName))
+      }
     case GetWorkflowDefinitions =>
-      sender() ! WorkflowDefinitions(workflowNames)
+      sender() ! WorkflowDefinitions(engine.workflowDefinitions map (_.name))
     case GetWorkflows =>
-      sender() ! Workflows(workflows)
+      sender() ! Workflows(engine.workflows)
+    case ExecuteRound =>
+      engine.executeRound
+      context.system.scheduler.scheduleOnce(1 second, self, ExecuteRound)
   }
 }
 

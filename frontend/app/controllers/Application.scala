@@ -22,9 +22,9 @@ class Application @Inject() (webJarAssets: WebJarAssets, system: ActorSystem)  e
   implicit val timeout = Timeout(10 seconds)
   val actorPath = "akka.tcp://workflows@127.0.0.1:2662/user/mockup"
   val wfForm = Form(mapping(
-    "label" -> nonEmptyText,
-    "name" -> nonEmptyText
-  )(CreateWorkflow.apply)(CreateWorkflow.unapply))
+    "name" -> nonEmptyText,
+    "label" -> nonEmptyText
+  )(StartWorkflow.apply)(StartWorkflow.unapply))
 
   def index = Action.async { implicit request =>
     val actorRef = system.actorSelection(actorPath)
@@ -64,8 +64,12 @@ class Application @Inject() (webJarAssets: WebJarAssets, system: ActorSystem)  e
         Future(Redirect(routes.Application.index()).flashing("error" -> "Failed workflow creation!")),
       value =>
         (system.actorSelection(actorPath) ? value).mapTo[Workflows].map({
-          case Workflows(workflows) =>
-            Redirect(routes.Application.index()).flashing("success" -> "Workflow created!")
+          case Workflows(workflows) if workflows.length == 1 =>
+            val wf = workflows.head
+            Redirect(routes.Application.index()).flashing("success" -> "Created workflow '%s' with id=%d!".format(wf.label, wf.id))
+        }).recover({
+          case _: ClassCastException | _: MatchError =>
+            Redirect(routes.Application.index()).flashing("error" -> "Exception in starting a workflow!")
         })
     )
   }
