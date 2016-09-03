@@ -8,8 +8,20 @@ object ImplicitConversions {
 
   implicit def toWorkflowViewSeq(wfSeq: Seq[Workflow]): Seq[WorkflowView] = wfSeq map toWorkflowView
 
-  implicit def toWorkflowView(wf: Workflow): WorkflowView =
-    WorkflowView(wf.id, wf.workflowDef.name, "Label", "State", wf.tasks map toTaskView)
+  implicit def toWorkflowView(wf: Workflow): WorkflowView = {
+    def helper(z: String, t: Task): String = {
+      if (z == "Waiting on manual task")
+        z
+      else if (!t.isExecuted && t.taskDef.isInstanceOf[ManualTaskDefinition])
+        "Waiting on manual task"
+      else if (!t.isExecuted)
+        "Running"
+      else
+        z
+    }
+    val state = wf.tasks.foldLeft("Finished")(helper)
+    WorkflowView(wf.id, wf.workflowDef.name, wf.label, state, wf.tasks map toTaskView)
+  }
 
   implicit def toTaskView(task: Task): TaskViewBase = task.taskDef match {
     case taskDef: ManualTaskDefinition =>
