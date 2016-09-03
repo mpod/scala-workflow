@@ -5,11 +5,15 @@ import akka.actor.Actor
 import akka.routing.{ActorRefRoutee, ConsistentHashingRoutingLogic, Router}
 import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
 import akka.util.Timeout
-import common.PublicActorMessages.{GetWorkflows, StartWorkflow}
+import common.PublicActorMessages.{GetWorkflowDefinitions, GetWorkflows, StartWorkflow, Workflows}
 import common.Views.WorkflowView
+
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import akka.pattern.ask
+
 import scala.concurrent.Future
+import scala.util.Random
 
 class RouterActor extends Actor {
   implicit val timeout = Timeout(10 seconds)
@@ -17,6 +21,7 @@ class RouterActor extends Actor {
 
   def hashMapping: ConsistentHashMapping = {
     case CreateWorkflowExtended(_, _, id) => id
+    case GetWorkflowDefinitions => Random.nextInt()
   }
 
   var router = {
@@ -44,10 +49,13 @@ class RouterActor extends Actor {
       val senderRef = sender()
       val f = Future.sequence(context.children map {c => (c ? GetWorkflows).mapTo[Seq[WorkflowView]]})
       f onSuccess {
-        case workflows => senderRef ! workflows.toList
+        case workflows =>
+          senderRef ! Workflows(workflows.toList.flatten)
       }
     case StartWorkflow(wfDefName, label) =>
       router.route(CreateWorkflowExtended(wfDefName, label, idGenerator.nextId), sender())
+    case GetWorkflowDefinitions =>
+      router.route(GetWorkflowDefinitions, sender())
   }
 }
 

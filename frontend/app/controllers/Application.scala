@@ -20,7 +20,7 @@ import scala.language.postfixOps
 class Application @Inject() (webJarAssets: WebJarAssets, system: ActorSystem)  extends Controller {
   implicit val executionContext = system.dispatcher
   implicit val timeout = Timeout(10 seconds)
-  val actorPath = "akka.tcp://workflows@127.0.0.1:2662/user/mockup"
+  val actorPath = "akka.tcp://workflows@127.0.0.1:2662/user/router"
   val wfForm = Form(mapping(
     "name" -> nonEmptyText,
     "label" -> nonEmptyText

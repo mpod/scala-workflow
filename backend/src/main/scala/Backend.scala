@@ -1,4 +1,5 @@
-import actors.PrivateActorMessages.ExecuteRound
+import actors.IdAllocatorActor
+import actors.PrivateActorMessages.{ExecuteRound, IdAllocatorActorRef}
 import akka.actor.{Actor, ActorSystem, Props}
 import common.PublicActorMessages._
 import common.Views._
@@ -105,8 +106,12 @@ class Mockup extends Actor {
 
 object Backend extends App {
   val system = ActorSystem("workflows")
+  val idAllocator = system.actorOf(Props[IdAllocatorActor], "allocator")
+  val router = system.actorOf(Props[actors.RouterActor], "router")
 
-  val mockupActor = system.actorOf(Props[Mockup], "mockup")
+  router ! IdAllocatorActorRef(idAllocator)
+
+  //val mockupActor = system.actorOf(Props[Mockup], "mockup")
 
   Await.result(system.whenTerminated, Duration.Inf)
 }

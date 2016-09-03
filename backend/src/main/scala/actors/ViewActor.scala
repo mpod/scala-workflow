@@ -2,7 +2,7 @@ package actors
 
 import actors.PrivateActorMessages.{CreateWorkflowExtended, IdAllocatorActorRef}
 import akka.actor.{Actor, Props}
-import common.PublicActorMessages.GetWorkflows
+import common.PublicActorMessages.{GetWorkflowDefinitions, GetWorkflows, Workflows}
 import common.Views.WorkflowView
 
 object ViewActor {
@@ -14,13 +14,15 @@ class ViewActor(index: Int) extends Actor {
   var wfViews: Seq[WorkflowView] = List.empty
 
   def receive = {
+    case GetWorkflowDefinitions =>
+      engineChild forward GetWorkflowDefinitions
     case GetWorkflows =>
       sender() ! wfViews
     case msg: CreateWorkflowExtended =>
       engineChild forward msg
     case msg: IdAllocatorActorRef =>
       engineChild ! msg
-    case views: Seq[WorkflowView] @unchecked =>
+    case Workflows(views) =>
       wfViews = views
   }
 }
