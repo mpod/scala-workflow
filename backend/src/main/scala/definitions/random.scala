@@ -1,6 +1,10 @@
 package definitions
 
+import engine.ActionResult.{No, Ok, Yes}
+import engine.Task.TaskActionContext
+import engine.TaskDefinition.{EndTaskDefinition, StartTaskDefinition}
 import engine._
+
 import util.Random
 
 object RandomIf extends TaskDefinition {

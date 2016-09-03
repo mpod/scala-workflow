@@ -10,6 +10,7 @@ import common.PublicActorMessages._
 import common.Views.WorkflowView
 import definitions.{ExampleWorkflow, RandomWorkflow}
 import engine._
+import engine.ImplicitConversions._
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
@@ -19,7 +20,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 object PrivateActorMessages {
   case class IdAllocatorActorRef(ref: ActorRef)
-  case class CreateWorkflowExtended(wfDefName: String, id: Int)
+  case class CreateWorkflowExtended(wfDefName: String, label: String, id: Int)
   case object ExecuteRound
   case object AllocateIdBlock
   case class AllocatedIdBlock(identifiers: Seq[Int])
@@ -30,7 +31,7 @@ class RouterActor extends Actor {
   var idGenerator: ActorBasedIdGenerator = _
 
   def hashMapping: ConsistentHashMapping = {
-    case CreateWorkflowExtended(wfDefName, id) => id
+    case CreateWorkflowExtended(_, _, id) => id
   }
 
   var router = {
@@ -60,8 +61,8 @@ class RouterActor extends Actor {
       f onSuccess {
         case workflows => senderRef ! workflows.toList
       }
-    case CreateWorkflow(wfDefName) =>
-      router.route(CreateWorkflowExtended(wfDefName, idGenerator.nextId), sender())
+    case CreateWorkflow(wfDefName, label) =>
+      router.route(CreateWorkflowExtended(wfDefName, label, idGenerator.nextId), sender())
   }
 }
 
@@ -91,12 +92,12 @@ class EngineActor extends Actor {
   val wfDefs = List(ExampleWorkflow, RandomWorkflow)
 
   def receive = {
-    case CreateWorkflowExtended(wfDefName, id) =>
+    case CreateWorkflowExtended(wfDefName, label, id) =>
       idGenerator.forceNextId(id)
       wfDefs.find(_.name == wfDefName) match {
         case Some(wfDef) =>
-          engine.startWorkflow(wfDef)
-          sender() ! StartedWorkflow(wfDefName, id)
+          val wf = engine.startWorkflow(wfDef)
+          sender() ! Workflows(List(wf))
         case None =>
           sender() ! Error(s"Workflow definition $wfDefName not found.")
       }

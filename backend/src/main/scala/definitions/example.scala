@@ -1,6 +1,9 @@
 package definitions
 
+import engine.ActionResult.{No, Ok, Yes}
 import engine.ManualTaskDefinition.{IntField, StringField}
+import engine.Task.TaskActionContext
+import engine.TaskDefinition._
 import engine._
 
 import util.Random

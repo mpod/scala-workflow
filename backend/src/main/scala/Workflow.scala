@@ -1,5 +1,6 @@
 import engine._
 import definitions._
+import engine.IdGenerator.SimpleIdGenerator
 
 object Workflow {
   def main(args: Array[String]): Unit = {

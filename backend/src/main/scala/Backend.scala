@@ -69,14 +69,14 @@ class Mockup extends Actor {
 
   def genWorkflowView = {
     val tasks = (1 to Random.nextInt(20)) map (_ => genTaskView)
-    WorkflowView(Random.nextInt(100), choice(workflowNames), choice(workflowStates), tasks)
+    WorkflowView(Random.nextInt(100), choice(workflowNames), choice(workflowNames), choice(workflowStates), tasks)
   }
 
   val workflows = (1 to 20) map (_ => genWorkflowView)
 
   def receive = {
-    case CreateWorkflow(wfDefName) =>
-      sender() ! StartedWorkflow(wfDefName, 2)
+    case CreateWorkflow(wfDefName, label) =>
+      sender() ! Workflows(List(genWorkflowView))
     case GetWorkflowDefinitions =>
       sender() ! WorkflowDefinitions(workflowNames)
     case GetWorkflows =>
