@@ -2,7 +2,7 @@ package definitions
 
 import engine.ActionResult.{No, Ok, Yes}
 import engine.ManualTaskDefinition.{IntField, StringField}
-import engine.Task.TaskActionContext
+import engine.Task.TaskContext
 import engine.TaskDefinition._
 import engine._
 
@@ -11,7 +11,7 @@ import util.Random
 class WaitTaskDefinition(n: Int) extends TaskDefinition {
   var waitFor = n
 
-  override def action(context: TaskActionContext): Option[ActionResult] = {
+  override def action(context: TaskContext): Option[ActionResult] = {
     waitFor -= 1
     if (waitFor <= 0)
       Some(Ok)
@@ -30,11 +30,11 @@ object ExampleWorkflow extends WorkflowDefinition {
   val subWf = new SubWorkflowTaskDefinition(ExampleSubWorkflow)
   val proc1 = new ProcessTaskDefinition(context => {
     val n = 2
-    context.workflow.cache.setIntVal("n", n)
+    context.workflow.put("n", n)
     println("Writing %d to workflow cache".format(n))
   })
   val proc2 = new ProcessTaskDefinition(context => {
-    println("Reading %d from workflow cache".format(context.workflow.cache.getIntVal("n")))
+    println("Reading %d from workflow cache".format(context.workflow.get[Int]("n")))
   })
 
   val man = new ManualTaskDefinition(

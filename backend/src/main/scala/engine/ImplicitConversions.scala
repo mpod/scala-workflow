@@ -2,7 +2,7 @@ package engine
 
 import scala.language.implicitConversions
 import common.Views._
-import engine.Task.TaskActionContext
+import engine.Task.TaskContext
 
 object ImplicitConversions {
 
@@ -30,7 +30,7 @@ object ImplicitConversions {
     case _ => TaskView(task.id, "TaskState", task.taskDef.name)
   }
 
-  implicit def toFieldView(field: ManualTaskDefinition.Field)(implicit context: TaskActionContext): ManualTaskFieldViewBase = field match {
+  implicit def toFieldView(field: ManualTaskDefinition.Field)(implicit context: TaskContext): ManualTaskFieldViewBase = field match {
     case f: ManualTaskDefinition.IntField => ManualTaskIntFieldView(f.name, f.label, f.value)
     case f: ManualTaskDefinition.StringField => ManualTaskStringFieldView(f.name, f.label, f.value)
     case _ => throw new UnsupportedOperationException("Unsupported field type.")

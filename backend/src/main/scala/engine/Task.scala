@@ -1,11 +1,11 @@
 package engine
 
 import com.typesafe.scalalogging.LazyLogging
-import engine.Task.{TaskActionContext, TaskState, TreeNode}
+import engine.Task.{TaskContext, TaskState, TreeNode}
 
 object Task {
 
-  class TaskActionContext(val task: Task) {
+  class TaskContext(val task: Task) {
     def workflow = task.workflow
     def engine = workflow.engine
   }
@@ -39,11 +39,11 @@ object Task {
 
 
 final class Task(val taskDef: TaskDefinition, val workflow: Workflow)(implicit idGen: IdGenerator)
-  extends TreeNode with LazyLogging {
+  extends TreeNode with Cache with LazyLogging {
+
   private var _state: TaskState.Value = TaskState.New
-  val cache = new Cache()
   val id = idGen.nextId
-  private val _context = new TaskActionContext(this)
+  private val _context = new TaskContext(this)
 
   implicit def context = _context
 
@@ -64,5 +64,6 @@ final class Task(val taskDef: TaskDefinition, val workflow: Workflow)(implicit i
   def isExecuted: Boolean = Set(TaskState.Done) contains _state
   override def toString = taskDef.name
   override def valueToString: String = taskDef.name
+
 }
 

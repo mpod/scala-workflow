@@ -4,10 +4,9 @@ import com.typesafe.scalalogging.LazyLogging
 import engine.TaskDefinition.{EndTaskDefinition, StartTaskDefinition}
 
 final class Workflow(wfDef: WorkflowDefinition, val label: String, parent: Option[Workflow], val engine: Engine)
-                    (implicit idGen: IdGenerator) extends LazyLogging {
+                    (implicit idGen: IdGenerator) extends Cache with LazyLogging {
 
   private var _tasks = List.empty[Task]
-  val cache = new Cache()
   val id = idGen.nextId
 
   def tasks = _tasks
