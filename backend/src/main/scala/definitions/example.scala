@@ -9,9 +9,10 @@ import engine._
 import util.Random
 
 class WaitTaskDefinition(n: Int) extends TaskDefinition {
+  /* TODO: Make it immutable */
   var waitFor = n
 
-  override def action(context: TaskContext): Option[ActionResult] = {
+  override def action(implicit context: TaskContext): Option[ActionResult] = {
     waitFor -= 1
     if (waitFor <= 0)
       Some(Ok)
@@ -26,7 +27,7 @@ object ExampleWorkflow extends WorkflowDefinition {
   val split = new SplitTaskDefinition()
   val wait2 = new WaitTaskDefinition(2)
   val wait3 = new WaitTaskDefinition(3)
-  val join = new JoinTaskDefinition(2)
+  val join = new JoinTaskDefinition(Set(wait2, wait3))
   val subWf = new SubWorkflowTaskDefinition(ExampleSubWorkflow)
   val proc1 = new ProcessTaskDefinition(context => {
     val n = 2

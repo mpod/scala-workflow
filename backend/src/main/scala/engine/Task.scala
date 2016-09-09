@@ -14,24 +14,24 @@ object Task {
     val New, Done, Running = Value
   }
 
-  trait TreeNode {
-    private var _parent: Option[TreeNode] = None
-    private var _children: List[TreeNode] = List()
+  trait TreeNode[T] {
+    private var _parent: Option[TreeNode[T]] = None
+    private var _children: List[TreeNode[T]] = List()
 
     def parent = _parent
     def children = _children
 
-    def addChild(node: TreeNode): Unit = {
+    def addChild(node: TreeNode[T]): Unit = {
       require(node.parent.isEmpty)
       node._parent = Some(this)
       _children = node :: _children
     }
 
-    def valueToString: String
+    def value: T
 
     override def toString = {
       val childrenStr = if (children.isEmpty) "" else " [\n" + children.map(_.toString).mkString("\n") + "\n]"
-      "(" + valueToString + childrenStr + ")"
+      "(" + value.toString + childrenStr + ")"
     }
   }
 
@@ -39,7 +39,7 @@ object Task {
 
 
 final class Task(val taskDef: TaskDefinition, val workflow: Workflow)(implicit idGen: IdGenerator)
-  extends TreeNode with Cache with LazyLogging {
+  extends TreeNode[Task] with Cache with LazyLogging {
 
   private var _state: TaskState.Value = TaskState.New
   val id = idGen.nextId
@@ -48,6 +48,8 @@ final class Task(val taskDef: TaskDefinition, val workflow: Workflow)(implicit i
   implicit def context = _context
 
   def state = _state
+
+  def value = this
 
   logger.debug("Created task \"%s\" with id %d".format(this, id))
 
@@ -63,7 +65,6 @@ final class Task(val taskDef: TaskDefinition, val workflow: Workflow)(implicit i
 
   def isExecuted: Boolean = Set(TaskState.Done) contains _state
   override def toString = taskDef.name
-  override def valueToString: String = taskDef.name
 
 }
 

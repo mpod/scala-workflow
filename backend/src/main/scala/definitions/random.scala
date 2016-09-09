@@ -8,17 +8,17 @@ import engine._
 import util.Random
 
 object RandomIf extends TaskDefinition {
-  override def action(context: TaskContext): Option[ActionResult] = if (new Random().nextBoolean) Option(Yes) else Option(No)
+  override def action(implicit context: TaskContext): Option[ActionResult] = if (new Random().nextBoolean) Option(Yes) else Option(No)
   override def name: String = "If"
 }
 
 object RandomTaskA extends TaskDefinition {
-  override def action(context: TaskContext): Option[ActionResult] = if (new Random().nextBoolean) Option(Ok) else None
+  override def action(implicit context: TaskContext): Option[ActionResult] = if (new Random().nextBoolean) Option(Ok) else None
   override def name: String = "TaskA"
 }
 
 object RandomTaskB extends TaskDefinition {
-  override def action(context: TaskContext): Option[ActionResult] = if (new Random().nextBoolean) Option(Ok) else None
+  override def action(implicit context: TaskContext): Option[ActionResult] = if (new Random().nextBoolean) Option(Ok) else None
   override def name: String = "TaskB"
 }
 

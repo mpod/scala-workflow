@@ -61,7 +61,7 @@ object TaskDefinition {
     private val key = "JoinTaskDefinition_%d".format(this.hashCode())
 
     override def action(implicit context: TaskContext): Option[ActionResult] = {
-      val parentDef = context.task.parent.asInstanceOf[Task].taskDef
+      val parentDef: TaskDefinition = context.task.parent.get.value.taskDef
       val parents = if (context.workflow contains key)
         context.workflow.get[Set[TaskDefinition]](key) + parentDef
       else
