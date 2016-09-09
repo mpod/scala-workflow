@@ -34,7 +34,8 @@ object TaskDefinition {
         else
           None
       } else {
-        context.engine.startWorkflow(wfDef, "SubWorkflow", context.task.workflow)
+        val wf: Workflow = context.engine.startWorkflow(wfDef, "SubWorkflow", context.task.workflow)
+        context.task.put(key, wf)
         None
       }
     }
