@@ -46,7 +46,13 @@ class ManualTaskDefinition(val fields: List[ManualTaskDefinition.Field]) extends
   def allFieldsSet(implicit context: TaskContext) = fields.forall(_.isSet)
 
   def setField(name: String, value: String)(implicit context: TaskContext) = fieldsMap.get(name) match {
-    case Some(f: IntField) => f.value_=(value.toInt)
+    case Some(f: IntField) =>
+      try {
+        f.value_=(value.toInt)
+      } catch {
+        case e: java.lang.NumberFormatException =>
+          throw new IllegalArgumentException("Field '%s' got a value '%s' but it expects a number.".format(name, value))
+      }
     case Some(f: StringField) => f.value_=(value)
     case Some(f) =>
       throw new IllegalArgumentException(

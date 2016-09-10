@@ -86,8 +86,9 @@ class Application @Inject() (webJarAssets: WebJarAssets, system: ActorSystem)  e
       case t: ManualTaskView =>
         val fieldValues = request.body.asFormUrlEncoded.get.map({case (k, v) => (k, v.head)})
         actor ? ExecuteManualTask(wfId, taskId, fieldValues)
-    }).mapTo[Workflows].map({
-      _ => Redirect(routes.Application.workflow(wfId)).flashing("success" -> "Task executed successfully!")
+    }).map({
+      case Workflows(_) => Redirect(routes.Application.workflow(wfId)).flashing("success" -> "Task executed successfully!")
+      case Error(message) => Redirect(routes.Application.task(wfId, taskId)).flashing("error" -> s"An exception occurred: $message")
     }).fallbackTo(Future{
       Redirect(routes.Application.workflow(wfId)).flashing("error" -> "Exception while executing a task.")
     })

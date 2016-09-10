@@ -1,7 +1,6 @@
 package engine
 
 import definitions.{ExampleWorkflow, RandomWorkflow}
-import engine.Task.TaskContext
 
 class Engine(implicit idGen: IdGenerator) {
   private var _workflows = List.empty[Workflow]
