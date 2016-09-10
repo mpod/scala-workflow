@@ -2,7 +2,7 @@ package actors
 
 import actors.PrivateActorMessages.{CreateWorkflowExtended, IdAllocatorActorRef}
 import akka.actor.{Actor, Props}
-import common.PublicActorMessages.{GetWorkflowDefinitions, GetWorkflows, Workflows}
+import common.PublicActorMessages.{ExecuteManualTask, GetWorkflowDefinitions, GetWorkflows, Workflows}
 import common.Views.WorkflowView
 
 object ViewActor {
@@ -24,6 +24,8 @@ class ViewActor(index: Int) extends Actor {
       engineChild ! msg
     case Workflows(views) =>
       wfViews = views
+    case msg: ExecuteManualTask =>
+      engineChild forward msg
   }
 }
 

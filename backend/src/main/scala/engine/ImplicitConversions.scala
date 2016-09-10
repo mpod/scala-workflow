@@ -26,8 +26,8 @@ object ImplicitConversions {
   implicit def toTaskView(task: Task): TaskViewBase = task.taskDef match {
     case taskDef: ManualTaskDefinition =>
       implicit val context = task.context
-      ManualTaskView(task.id, "TaskState", task.taskDef.name, taskDef.fields map toFieldView)
-    case _ => TaskView(task.id, "TaskState", task.taskDef.name)
+      ManualTaskView(task.id, task.state.toString, task.taskDef.name, taskDef.fields map toFieldView)
+    case _ => TaskView(task.id, task.state.toString, task.taskDef.name)
   }
 
   implicit def toFieldView(field: ManualTaskDefinition.Field)(implicit context: TaskContext): ManualTaskFieldViewBase = field match {

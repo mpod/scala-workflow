@@ -5,7 +5,7 @@ import akka.actor.Actor
 import akka.routing.{ActorRefRoutee, ConsistentHashingRoutingLogic, Router}
 import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
 import akka.util.Timeout
-import common.PublicActorMessages.{GetWorkflowDefinitions, GetWorkflows, StartWorkflow, Workflows}
+import common.PublicActorMessages._
 import common.Views.WorkflowView
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -20,8 +20,9 @@ class RouterActor extends Actor {
   var idGenerator: ActorBasedIdGenerator = _
 
   def hashMapping: ConsistentHashMapping = {
-    case CreateWorkflowExtended(_, _, id) => id
+    case CreateWorkflowExtended(_, _, wfId) => wfId
     case GetWorkflowDefinitions => Random.nextInt()
+    case ExecuteManualTask(wfId, _, _) => wfId
   }
 
   var router = {
@@ -56,6 +57,8 @@ class RouterActor extends Actor {
       router.route(CreateWorkflowExtended(wfDefName, label, idGenerator.nextId), sender())
     case GetWorkflowDefinitions =>
       router.route(GetWorkflowDefinitions, sender())
+    case m: ExecuteManualTask =>
+      router.route(m, sender())
   }
 }
 

@@ -12,7 +12,10 @@ object ManualTaskDefinition {
       context.task.put(name, value)
     }
     def value(implicit context: TaskContext): Option[ValueType] = {
-      Option(context.task.get[ValueType](name))
+      if (context.task.contains(name))
+        Option(context.task.get[ValueType](name))
+      else
+        None
     }
     def isSet(implicit context: TaskContext) = context.task.contains(name)
     def typeName: String
@@ -42,16 +45,16 @@ class ManualTaskDefinition(val fields: List[ManualTaskDefinition.Field]) extends
 
   def allFieldsSet(implicit context: TaskContext) = fields.forall(_.isSet)
 
-  def setField(name: String, value: Any)(implicit context: TaskContext) = (fieldsMap.get(name), value) match {
-    case (Some(f: IntField), v: Int) => f.value_=(v)
-    case (Some(f: StringField), v: String) => f.value_=(v)
-    case (Some(f), _) =>
+  def setField(name: String, value: String)(implicit context: TaskContext) = fieldsMap.get(name) match {
+    case Some(f: IntField) => f.value_=(value.toInt)
+    case Some(f: StringField) => f.value_=(value)
+    case Some(f) =>
       throw new IllegalArgumentException(
         "Field %s is of type %s, while given value is of type %s".format(
           name, f.getClass.getName, value.getClass.getName
         )
       )
-    case (None, _) =>
+    case None =>
       throw new IllegalArgumentException("Field %s not found.".format(name))
   }
 }

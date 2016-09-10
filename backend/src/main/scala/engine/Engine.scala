@@ -7,7 +7,7 @@ class Engine(implicit idGen: IdGenerator) {
 
   def workflowDefinitions: Seq[WorkflowDefinition] = List(RandomWorkflow, ExampleWorkflow)
 
-  def workflows = _workflows
+  def workflows = _workflows filter {_.parentWorkflow.isEmpty}
 
   def startWorkflow(wfDef: WorkflowDefinition, label: String): Workflow = {
     startWorkflow(wfDef, label, None)
@@ -40,13 +40,13 @@ class Engine(implicit idGen: IdGenerator) {
     if task.taskDef.isInstanceOf[ManualTaskDefinition]
   } yield task
 
-  def setManualTaskFields(wfId: Int, taskId: Int, values: Seq[(String, Any)]): Unit = {
+  def setManualTaskFields(wfId: Int, taskId: Int, values: Map[String, String]): Unit = {
     findManualTask(wfId, taskId) match {
       case Some(t) =>
         val taskDef = t.taskDef
         val context = t.context
         taskDef match {
-          case td: ManualTaskDefinition => values.foreach(p => td.setField(p._1, p._2)(context))
+          case td: ManualTaskDefinition => values.foreach({case (k, v) => td.setField(k, v)(context)})
           case _ => throw new UnknownError("Unexpected error.")
         }
       case None => throw new IllegalArgumentException("Manual task not found.")

@@ -23,6 +23,10 @@ class WaitTaskDefinition(n: Int) extends TaskDefinition {
 }
 
 object ExampleWorkflow extends WorkflowDefinition {
+  val man = new ManualTaskDefinition(List(
+    StringField("Simple String field", "strfield"),
+    IntField("Simple Int field", "intfield")
+  ))
   val branch = new BranchTaskDefinition(context => new Random().nextBoolean)
   val split = new SplitTaskDefinition()
   val wait2 = new WaitTaskDefinition(2)
@@ -38,15 +42,9 @@ object ExampleWorkflow extends WorkflowDefinition {
     println("Reading %d from workflow cache".format(context.workflow.get[Int]("n")))
   })
 
-  val man = new ManualTaskDefinition(
-    fields = List(
-      StringField("Description", "Description"),
-      IntField("MagicNumber", "Magic Number")
-    )
-  )
-
   override val transitions: Map[(TaskDefinition, ActionResult), List[TaskDefinition]] = Map(
-    (StartTaskDefinition, Ok) -> List(branch),
+    (StartTaskDefinition, Ok) -> List(man),
+    (man, Ok) -> List(branch),
     (branch, Yes) -> List(proc1),
     (proc1, Ok) -> List(split),
     (branch, No) -> List(subWf),

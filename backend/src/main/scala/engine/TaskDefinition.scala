@@ -68,6 +68,7 @@ object TaskDefinition {
       else
         Set(parentDef)
 
+      context.workflow.put(key, parents)
       if (waitFor == parents)
         Some(Ok)
       else

@@ -18,7 +18,7 @@
                     <label for="input-@i">@f.label</label>
                     <div class="input-group">
                         <input type="text" class="form-control" id="input-@i" aria-describedby="basic-addon-@i"
-                               value="@f.valueToString" name="input-@i">
+                               value="@f.valueToString" name="@f.name">
                         <span class="input-group-addon" id="basic-addon-@i">
                             @f match {
                                 case _: ManualTaskStringFieldView => {String}

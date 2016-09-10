@@ -2,7 +2,7 @@ package actors
 
 import actors.PrivateActorMessages.{CreateWorkflowExtended, ExecuteRound, IdAllocatorActorRef}
 import akka.actor.Actor
-import common.PublicActorMessages.{Error, GetWorkflowDefinitions, WorkflowDefinitions, Workflows}
+import common.PublicActorMessages._
 import engine.Engine
 
 import scala.concurrent.duration._
@@ -44,6 +44,10 @@ class EngineActor extends Actor {
       engine.executeRound
       context.parent ! Workflows(engine.workflows)
       context.system.scheduler.scheduleOnce(1 second, self, ExecuteRound)
+    case ExecuteManualTask(wfId, taskId, fieldValues) =>
+      engine.setManualTaskFields(wfId, taskId, fieldValues)
+      context.parent ! Workflows(engine.workflows)
+      sender() ! Workflows(engine.workflows)
   }
 }
 
