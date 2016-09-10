@@ -89,7 +89,7 @@ class Application @Inject() (webJarAssets: WebJarAssets, system: ActorSystem)  e
     }).mapTo[Workflows].map({
       _ => Redirect(routes.Application.workflow(wfId)).flashing("success" -> "Task executed successfully!")
     }).fallbackTo(Future{
-      Redirect(routes.Application.workflow(wfId)).flashing("error" -> "Exception in executing a task.")
+      Redirect(routes.Application.workflow(wfId)).flashing("error" -> "Exception while executing a task.")
     })
   }
 
