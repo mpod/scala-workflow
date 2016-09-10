@@ -52,7 +52,7 @@ class Application @Inject() (webJarAssets: WebJarAssets, system: ActorSystem)  e
         val task = wf flatMap {_.tasks find {_.id == taskId}}
 
         task match {
-          case Some(t: ManualTaskView) => Ok(views.html.task(wf.get, t, webJarAssets))
+          case Some(t: ManualTaskView) => Ok(views.html.task(wf.get, t, t.state == "Done", webJarAssets))
           case None => InternalServerError("Task not found.")
         }
     })

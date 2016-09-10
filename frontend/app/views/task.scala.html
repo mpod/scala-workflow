@@ -1,8 +1,8 @@
 @import common.Views._
-@(wf: WorkflowView, task: ManualTaskView, webJarAssets: WebJarAssets)(implicit flash: Flash)
+@(wf: WorkflowView, task: ManualTaskView, isDone: Boolean, webJarAssets: WebJarAssets)(implicit flash: Flash)
 @main(webJarAssets)(breadcrumbs(wf.id, task.id))(flash) {
 <blockquote>
-    <p>Workflow: @wf.name (#@wf.id)<br/>Task: @task.defName (#@task.id)</p>
+    <p>Workflow: @wf.name (#@wf.id)<br/>Task: @task.defName (#@task.id) @if(isDone){<br/>Executed!}</p>
 </blockquote>
 <div class="panel panel-default">
     <div class="panel-heading">
@@ -18,7 +18,7 @@
                     <label for="input-@i">@f.label</label>
                     <div class="input-group">
                         <input type="text" class="form-control" id="input-@i" aria-describedby="basic-addon-@i"
-                               value="@f.valueToString" name="@f.name">
+                               value="@f.valueToString" name="@f.name" @if(isDone){disabled}>
                         <span class="input-group-addon" id="basic-addon-@i">
                             @f match {
                                 case _: ManualTaskStringFieldView => {String}
@@ -29,7 +29,9 @@
                 </div>
             </div>
             }
+            @if(!isDone){
             <button type="submit" class="btn btn-primary">Submit</button>
+            }
         </form>
     </div>
 </div>

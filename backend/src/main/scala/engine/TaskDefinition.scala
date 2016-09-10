@@ -20,6 +20,7 @@ object TaskDefinition {
     }
 
     override def name: String = "Process"
+
   }
 
   class SubWorkflowTaskDefinition(wfDef: WorkflowDefinition) extends TaskDefinition {
@@ -41,13 +42,19 @@ object TaskDefinition {
     }
 
     override def name: String = "SubWorkflow[%s]".format(wfDef.name)
+
   }
 
-  class BranchTaskDefinition(f: (TaskContext) => Boolean) extends TaskDefinition {
+  class BranchTaskDefinition(func: (TaskContext) => Boolean) extends TaskDefinition {
 
-    override def action(implicit context: TaskContext): Option[ActionResult] = if (f(context)) Some(Yes) else Some(No)
+    override def action(implicit context: TaskContext): Option[ActionResult] =
+      if (func(context))
+        Some(Yes)
+      else
+        Some(No)
 
     override def name: String = "Branch"
+
   }
 
   class SplitTaskDefinition extends TaskDefinition {
@@ -55,6 +62,7 @@ object TaskDefinition {
     override def action(implicit context: TaskContext): Option[ActionResult] = Some(Ok)
 
     override def name: String = "Split"
+
   }
 
   class JoinTaskDefinition(val waitFor: Set[TaskDefinition]) extends TaskDefinition {
@@ -76,6 +84,7 @@ object TaskDefinition {
     }
 
     override def name: String = "Join"
+
   }
 
   object StartTaskDefinition extends TaskDefinition {
@@ -83,6 +92,7 @@ object TaskDefinition {
     override def action(implicit context: TaskContext): Option[ActionResult] = Option(Ok)
 
     override def name: String = "Start"
+
   }
 
   object EndTaskDefinition extends TaskDefinition {
@@ -90,6 +100,7 @@ object TaskDefinition {
     override def action(implicit context: TaskContext): Option[ActionResult] = Option(Ok)
 
     override def name: String = "End"
+
   }
 
 }

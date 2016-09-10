@@ -21,6 +21,7 @@ lazy val backend = (project in file("backend"))
   .settings(
     name := "akka-backend",
     libraryDependencies ++= Dependencies.backend,
+    mainClass in (Compile, run) := Some("Backend"),
     commonSettings
   ).dependsOn(common)
 

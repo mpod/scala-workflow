@@ -2,7 +2,7 @@ package actors
 
 import actors.PrivateActorMessages.{CreateWorkflowExtended, IdAllocatorActorRef}
 import akka.actor.{Actor, Props}
-import common.PublicActorMessages.{ExecuteManualTask, GetWorkflowDefinitions, GetWorkflows, Workflows}
+import common.PublicActorMessages._
 import common.Views.WorkflowView
 
 object ViewActor {
@@ -26,6 +26,10 @@ class ViewActor(index: Int) extends Actor {
       wfViews = views
     case msg: ExecuteManualTask =>
       engineChild forward msg
+    case msg: Error =>
+      /* TODO: Log error message */
+    case _ =>
+      sender() ! Error("Unknown message!")
   }
 }
 

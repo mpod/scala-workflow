@@ -24,7 +24,7 @@ class EngineActor extends Actor {
       context.become(initialized)
       context.system.scheduler.scheduleOnce(1 second, self, ExecuteRound)
     case _ =>
-      throw new RuntimeException("Engine actor not ready!")
+      sender() ! Error("Engine actor not ready!")
   }
 
   def initialized: Receive = {
@@ -48,6 +48,10 @@ class EngineActor extends Actor {
       engine.setManualTaskFields(wfId, taskId, fieldValues)
       context.parent ! Workflows(engine.workflows)
       sender() ! Workflows(engine.workflows)
+    case msg: Error =>
+      /* TODO: Log error message */
+    case _ =>
+      sender() ! Error("Unknown message!")
   }
 }
 

@@ -11,6 +11,8 @@ class IdAllocatorActor extends Actor {
     case AllocateIdBlock =>
       sender() ! AllocatedIdBlock(new Range(lastId, lastId + blockSize, 1).toList)
       lastId += blockSize
+    case _ =>
+      /* TODO: Log message and ignore */
   }
 }
 

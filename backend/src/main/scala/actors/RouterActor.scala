@@ -42,7 +42,7 @@ class RouterActor extends Actor {
       idGenerator = new ActorBasedIdGenerator(ref)
       context.become(initialized)
     case _ =>
-      throw new RuntimeException("Not ready!")
+      sender() ! Error("Router not ready!")
   }
 
   def initialized: Receive = {
@@ -59,6 +59,10 @@ class RouterActor extends Actor {
       router.route(GetWorkflowDefinitions, sender())
     case m: ExecuteManualTask =>
       router.route(m, sender())
+    case msg: Error =>
+      /* TODO: Log error message */
+    case _ =>
+      sender() ! Error("Unknown message!")
   }
 }
 
