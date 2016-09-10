@@ -1,13 +1,6 @@
 @import common.Views._
 @(workflows: Seq[WorkflowView], wfDefNames: Seq[String], webJarAssets: WebJarAssets)(implicit flash: Flash)
-@main(webJarAssets)(breadcrumbs()) {
-
-@if(flash.data.contains("success")) {
-<div class="alert alert-success" role="alert">@flash.get("success")</div>
-}
-@if(flash.data.contains("error")) {
-<div class="alert alert-danger" role="alert">@flash.get("error")</div>
-}
+@main(webJarAssets)(breadcrumbs())(flash) {
 
 <div class="panel panel-default">
     <div class="panel-heading">

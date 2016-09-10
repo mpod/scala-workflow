@@ -1,6 +1,6 @@
 @import common.Views._
-@(wf: WorkflowView, task: ManualTaskView, webJarAssets: WebJarAssets)
-@main(webJarAssets)(breadcrumbs(wf.id, task.id)) {
+@(wf: WorkflowView, task: ManualTaskView, webJarAssets: WebJarAssets)(implicit flash: Flash)
+@main(webJarAssets)(breadcrumbs(wf.id, task.id))(flash) {
 <blockquote>
     <p>Workflow: @wf.name (#@wf.id)<br/>Task: @task.defName (#@task.id)</p>
 </blockquote>
@@ -11,14 +11,14 @@
         </h3>
     </div>
     <div class="panel-body">
-        <form>
+        <form action="@routes.Application.executeManualTask(wf.id, task.id)" method="post">
             @for((f, i) <- task.fields.zipWithIndex){
             <div class="row">
                 <div class="form-group col-md-8">
                     <label for="input-@i">@f.label</label>
                     <div class="input-group">
                         <input type="text" class="form-control" id="input-@i" aria-describedby="basic-addon-@i"
-                               value="@f.valueToString">
+                               value="@f.valueToString" name="input-@i">
                         <span class="input-group-addon" id="basic-addon-@i">
                             @f match {
                                 case _: ManualTaskStringFieldView => {String}

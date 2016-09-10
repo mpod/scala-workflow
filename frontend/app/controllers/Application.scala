@@ -12,7 +12,6 @@ import common.PublicActorMessages._
 import common.Views.ViewsJsonProtocol._
 import common.Views.{ManualTaskView, TaskViewBase, WorkflowView}
 import play.api.data.Form
-
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -20,8 +19,8 @@ import scala.language.postfixOps
 class Application @Inject() (webJarAssets: WebJarAssets, system: ActorSystem)  extends Controller {
   implicit val executionContext = system.dispatcher
   implicit val timeout = Timeout(10 seconds)
-  val actorPath = "akka.tcp://workflows@127.0.0.1:2662/user/router"
-  //val actorPath = "akka.tcp://workflows@127.0.0.1:2662/user/mockup"
+  //val actorPath = "akka.tcp://workflows@127.0.0.1:2662/user/router"
+  val actorPath = "akka.tcp://workflows@127.0.0.1:2662/user/mockup"
   val wfForm = Form(mapping(
     "name" -> nonEmptyText,
     "label" -> nonEmptyText
@@ -73,6 +72,25 @@ class Application @Inject() (webJarAssets: WebJarAssets, system: ActorSystem)  e
             Redirect(routes.Application.index()).flashing("error" -> "Exception in starting a workflow!")
         })
     )
+  }
+
+  def executeManualTask(wfId: Int, taskId: Int) = Action.async { implicit request =>
+    def findTask(workflows: Seq[WorkflowView], wfId: Int, taskId: Int): TaskViewBase = {
+      workflows find {_.id == wfId} flatMap {_.tasks find {_.id == taskId}} get
+    }
+    val actor = system.actorSelection(actorPath)
+
+    (actor ? GetWorkflows).map({
+      case Workflows(workflows) => findTask(workflows, wfId, taskId)
+    }).flatMap({
+      case t: ManualTaskView =>
+        val fieldValues = request.body.asFormUrlEncoded.get.map({case (k, v) => (k, v.head)})
+        actor ? ExecuteManualTask(wfId, taskId, fieldValues)
+    }).mapTo[Workflows].map({
+      _ => Redirect(routes.Application.workflow(wfId)).flashing("success" -> "Task executed successfully!")
+    }).fallbackTo(Future{
+      Redirect(routes.Application.workflow(wfId)).flashing("error" -> "Exception in executing a task.")
+    })
   }
 
   def json = Action.async {

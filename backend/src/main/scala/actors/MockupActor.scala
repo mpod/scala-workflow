@@ -84,5 +84,10 @@ class MockupActor extends Actor {
       sender() ! WorkflowDefinitions((1 to 5) map (_ => choice(workflowNames)))
     case GetWorkflows =>
       sender() ! Workflows(workflows)
+    case ExecuteManualTask(wfId, taskId, fieldValues) =>
+      if (Random.nextBoolean())
+        sender() ! Workflows(List(genWorkflowView))
+      else
+        sender() ! Error("Cannot execute manual task!")
   }
 }

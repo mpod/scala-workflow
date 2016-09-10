@@ -4,6 +4,7 @@ GET /workflow/:wfId/task/:taskId     controllers.Application.task(wfId: Int, tas
 GET /json                            controllers.Application.json
 
 POST /workflow                       controllers.Application.createWorkflow
+POST /workflow/:wfId/task/:taskId    controllers.Application.executeManualTask(wfId: Int, taskId: Int)
 
 # Map static resources from the /public folder to the /assets URL path
 GET /assets/*file                    controllers.Assets.at(path="/public", file)

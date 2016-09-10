@@ -1,4 +1,4 @@
-@(webJarAssets: WebJarAssets)(breadcrumb: Html)(content: Html)
+@(webJarAssets: WebJarAssets)(breadcrumb: Html)(flash: Flash)(content: Html)
 <!doctype html>
 <html>
 <head>
@@ -19,6 +19,13 @@
     <h1>scala-workflow</h1>
 
     @breadcrumb
+
+    @if(flash.data.contains("success")) {
+    <div class="alert alert-success" role="alert">@flash.get("success")</div>
+    }
+    @if(flash.data.contains("error")) {
+    <div class="alert alert-danger" role="alert">@flash.get("error")</div>
+    }
 
     @content
 

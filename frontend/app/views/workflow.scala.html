@@ -1,6 +1,6 @@
 @import common.Views._
-@(wf: WorkflowView, webJarAssets: WebJarAssets)
-@main(webJarAssets)(breadcrumbs(wf.id)) {
+@(wf: WorkflowView, webJarAssets: WebJarAssets)(implicit flash: Flash)
+@main(webJarAssets)(breadcrumbs(wf.id))(flash) {
     <blockquote>
         <p>Workflow: @wf.name (#@wf.id)</p>
     </blockquote>
