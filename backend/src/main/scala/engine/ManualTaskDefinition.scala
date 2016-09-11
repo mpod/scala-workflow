@@ -13,7 +13,7 @@ object ManualTaskDefinition {
     }
     def value(implicit context: TaskContext): Option[ValueType] = {
       if (context.task.contains(name))
-        Option(context.task.get[ValueType](name))
+        context.task.get[ValueType](name)
       else
         None
     }

@@ -18,18 +18,29 @@
             </thead>
             <tbody>
             @for(task <- wf.tasks) {
-            <tr>
-                <th scope="row" style="text-align: center;">@task.id</th>
-                <td>
-                    @task match {
-                    case t: ManualTaskView => { <a href="@routes.Application.task(wf.id, task.id)">@task.defName</a> }
-                    case t: TaskView => { @task.defName }
-                    }
-                </td>
-                <td>@task.state</td>
-            </tr>
+            @displayTask(task, wf.id, "")
             }
             </tbody>
         </table>
     </div>
 }
+
+@displayTask(task: TaskViewBase, wfId: Int, prefix: String) = {
+    @if(task.isInstanceOf[SubWorkflowTaskView]) {
+        @for(t <- task.asInstanceOf[SubWorkflowTaskView].subwf.get.tasks) {
+            @displayTask(t, task.asInstanceOf[SubWorkflowTaskView].subwf.get.id, task.defName)
+        }
+    }
+    <tr>
+        <th scope="row" style="text-align: center;">@task.id</th>
+        <td>
+            @task match {
+            case t: ManualTaskView => { <a href="@routes.Application.task(wfId, task.id)">@prefix @task.defName</a> }
+            case t: SubWorkflowTaskView => { @prefix @task.defName }
+            case t: TaskView => { @prefix @task.defName }
+            }
+        </td>
+        <td>@task.state</td>
+    </tr>
+}
+

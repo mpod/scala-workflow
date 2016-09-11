@@ -27,17 +27,15 @@ object TaskDefinition {
 
     private val key = "SubflowTaskDefinition_%d".format(this.hashCode())
 
+    def subWorkflow(implicit context: TaskContext): Option[Workflow] = context.task.get[Workflow](key)
+
     override def action(implicit context: TaskContext): Option[ActionResult] ={
-      if (context.task.contains(key)) {
-        val wf = context.task.get[Workflow](key)
-        if (wf.endExecuted)
-          Some(Ok)
-        else
-          None
-      } else {
+      subWorkflow orElse {
         val wf: Workflow = context.engine.startWorkflow(wfDef, "SubWorkflow", context.task.workflow)
         context.task.put(key, wf)
         None
+      } flatMap {
+        wf => if (wf.endExecuted) Some(Ok) else None
       }
     }
 
@@ -71,10 +69,7 @@ object TaskDefinition {
 
     override def action(implicit context: TaskContext): Option[ActionResult] = {
       val parentDef: TaskDefinition = context.task.parent.get.value.taskDef
-      val parents = if (context.workflow contains key)
-        context.workflow.get[Set[TaskDefinition]](key) + parentDef
-      else
-        Set(parentDef)
+      val parents = context.workflow.get[Set[TaskDefinition]](key).map(_ + parentDef).getOrElse(Set(parentDef))
 
       context.workflow.put(key, parents)
       if (waitFor == parents)

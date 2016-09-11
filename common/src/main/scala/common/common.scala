@@ -22,6 +22,7 @@ object Views {
   }
   case class TaskView(id: Int, state: String, defName: String) extends TaskViewBase
   case class ManualTaskView(id: Int, state: String, defName: String, fields: Seq[ManualTaskFieldViewBase]) extends TaskViewBase
+  case class SubWorkflowTaskView(id: Int, state: String, defName: String, subwf: Option[WorkflowView]) extends TaskViewBase
   case class WorkflowView(id: Int, name: String, label: String, state: String, tasks: Seq[TaskViewBase])
 
   object ViewsJsonProtocol extends DefaultJsonProtocol {
@@ -43,14 +44,27 @@ object Views {
         case _ => deserializationError("Not supported.")
       }
     }
+    implicit lazy val subWorkflowTaskViewJsonFormat = new RootJsonFormat[SubWorkflowTaskView] {
+      def write(t: SubWorkflowTaskView): JsValue = JsObject(
+        "id" -> JsNumber(t.id),
+        "state" -> JsString(t.state),
+        "defName" -> JsString(t.defName),
+        "subWorkflow" -> t.subwf.map({wf: WorkflowView => workflowViewJsonFormat.write(wf)}).getOrElse(JsNull)
+      )
+
+      def read(value: JsValue) = value match {
+        case _ => deserializationError("Not supported.")
+      }
+    }
     implicit val taskViewJsonFormat = jsonFormat3(TaskView)
-    implicit val workflowViewJsonFormat = new RootJsonFormat[WorkflowView] {
-      def write(wf: WorkflowView) = JsObject(
+    implicit val workflowViewJsonFormat: RootJsonFormat[WorkflowView] = new RootJsonFormat[WorkflowView] {
+      def write(wf: WorkflowView): JsValue = JsObject(
         "id" -> JsNumber(wf.id),
         "state" -> JsString(wf.state),
         "tasks" -> JsArray(wf.tasks.map({
           case t: TaskView => t.toJson
           case t: ManualTaskView => manualTaskViewJsonFormat.write(t)
+          case t: SubWorkflowTaskView => subWorkflowTaskViewJsonFormat.write(t)
           case _ => serializationError("Not supported.")
         }).toVector)
       )

@@ -39,7 +39,7 @@ object ExampleWorkflow extends WorkflowDefinition {
     println("Writing %d to workflow cache".format(n))
   })
   val proc2 = new ProcessTaskDefinition(context => {
-    println("Reading %d from workflow cache".format(context.workflow.get[Int]("n")))
+    println("Reading %d from workflow cache".format(context.workflow.get[Int]("n").get))
   })
 
   override val transitions: Map[(TaskDefinition, ActionResult), List[TaskDefinition]] = Map(

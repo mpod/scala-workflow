@@ -3,10 +3,13 @@ package engine
 import scala.language.implicitConversions
 import common.Views._
 import engine.Task.TaskContext
+import engine.TaskDefinition.SubWorkflowTaskDefinition
 
 object ImplicitConversions {
 
   implicit def toWorkflowViewSeq(wfSeq: Seq[Workflow]): Seq[WorkflowView] = wfSeq map toWorkflowView
+
+  implicit def toWorkflowViewOption(wfOption: Option[Workflow]): Option[WorkflowView] = wfOption map toWorkflowView
 
   implicit def toWorkflowView(wf: Workflow): WorkflowView = {
     def helper(z: String, t: Task): String = {
@@ -27,6 +30,8 @@ object ImplicitConversions {
     case taskDef: ManualTaskDefinition =>
       implicit val context = task.context
       ManualTaskView(task.id, task.state.toString, task.taskDef.name, taskDef.fields map toFieldView)
+    case taskDef: SubWorkflowTaskDefinition =>
+      SubWorkflowTaskView(task.id, task.state.toString, task.taskDef.name, taskDef.subWorkflow(task.context))
     case _ => TaskView(task.id, task.state.toString, task.taskDef.name)
   }
 
