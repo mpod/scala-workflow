@@ -27,7 +27,7 @@ object Dependencies {
   )
 
   val tests = Seq(
-    "org.scalatest" %% "scalatest" % "2.2.4" % "test",
+    "org.scalatest" %% "scalatest" % "3.0.0" % "test",
     "junit" % "junit" % "4.12" % "test",
     "com.typesafe.akka" %% "akka-testkit" % Version.akka % "test"
   )
