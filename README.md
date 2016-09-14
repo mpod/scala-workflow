@@ -10,7 +10,7 @@ Experimental workflow engine written in Scala.
 * _Join_ activity for merging branches into one
 * _Subflow_ activity enables workflow compositions
 * _Manual task_ activity for collecting input data
-* Workflows are designed in Scala code as a set of activities and transitions.
+* Workflows are designed in Scala code as a set of activities and transitions
 
 ## Getting started ##
 
