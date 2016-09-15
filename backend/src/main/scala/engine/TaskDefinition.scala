@@ -8,30 +8,30 @@ abstract class TaskDefinition {
   def action(implicit context: TaskContext): Option[ActionResult]
 
   def name: String
+
 }
 
 object TaskDefinition {
 
   class ProcessTaskDefinition(func: (TaskContext) => Unit) extends TaskDefinition {
-
     override def action(implicit context: TaskContext): Option[ActionResult] = {
       func(context)
       Some(Ok)
     }
 
     override def name: String = "Process"
-
   }
+
 
   class SubWorkflowTaskDefinition(wfDef: WorkflowDefinition) extends TaskDefinition {
 
     private val key = "SubflowTaskDefinition_%d".format(this.hashCode())
 
-    def subWorkflow(implicit context: TaskContext): Option[Workflow] = context.task.get[Workflow](key)
+    def subWorkflow(task: Task): Option[Workflow] = task.get[Workflow](key)
 
     override def action(implicit context: TaskContext): Option[ActionResult] ={
-      subWorkflow orElse {
-        val wf: Workflow = context.engine.startWorkflow(wfDef, "SubWorkflow", context.task.workflow)
+      subWorkflow(context.task) orElse {
+        val wf: Workflow = context.engine.startWorkflow(wfDef, "SubWorkflow", context.workflow)
         context.task.put(key, wf)
         None
       } flatMap {
@@ -40,8 +40,8 @@ object TaskDefinition {
     }
 
     override def name: String = "SubWorkflow[%s]".format(wfDef.name)
-
   }
+
 
   class BranchTaskDefinition(func: (TaskContext) => Boolean) extends TaskDefinition {
 
@@ -55,6 +55,7 @@ object TaskDefinition {
 
   }
 
+
   class SplitTaskDefinition extends TaskDefinition {
 
     override def action(implicit context: TaskContext): Option[ActionResult] = Some(Ok)
@@ -62,6 +63,7 @@ object TaskDefinition {
     override def name: String = "Split"
 
   }
+
 
   class JoinTaskDefinition(val waitFor: Set[TaskDefinition]) extends TaskDefinition {
 
@@ -82,6 +84,7 @@ object TaskDefinition {
 
   }
 
+
   object StartTaskDefinition extends TaskDefinition {
 
     override def action(implicit context: TaskContext): Option[ActionResult] = Option(Ok)
@@ -89,6 +92,7 @@ object TaskDefinition {
     override def name: String = "Start"
 
   }
+
 
   object EndTaskDefinition extends TaskDefinition {
 

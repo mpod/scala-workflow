@@ -2,12 +2,17 @@ package engine
 
 import definitions.{ExampleWorkflow, RandomWorkflow}
 
-class Engine(implicit idGen: IdGenerator) {
-  private var _workflows = List.empty[Workflow]
+class Engine(idGen: IdGenerator) {
+
+  private var _workflows: List[Workflow] = List.empty[Workflow]
+
+  implicit private val _engine: Engine = this
 
   def workflowDefinitions: Seq[WorkflowDefinition] = List(RandomWorkflow, ExampleWorkflow)
 
-  def workflows = _workflows filter {_.parentWorkflow.isEmpty}
+  def workflows: Seq[Workflow] = _workflows filter {_.parentWorkflow.isEmpty}
+
+  def idGenerator: IdGenerator = idGen
 
   def startWorkflow(wfDef: WorkflowDefinition, label: String): Workflow = {
     startWorkflow(wfDef, label, None)
@@ -18,7 +23,7 @@ class Engine(implicit idGen: IdGenerator) {
   }
 
   def startWorkflow(wfDef: WorkflowDefinition, label: String, parentWf: Option[Workflow]): Workflow = {
-    val wf = new Workflow(wfDef, label, parentWf, this)
+    val wf = new Workflow(idGenerator.nextId, wfDef, label, parentWf)
     wf.start
     _workflows ::= wf
     wf
@@ -32,35 +37,18 @@ class Engine(implicit idGen: IdGenerator) {
     wf
   }
 
-  def findWorkflow(wfId: Int) = _workflows.find(_.id == wfId)
+  def findWorkflow(wfId: Int): Option[Workflow] = workflows find (_.id == wfId)
 
-  private def findManualTask(wfId: Int, taskId: Int): Option[Task] = for {
-    wf <- findWorkflow(wfId)
-    task <- wf.findTask(taskId)
-    if task.taskDef.isInstanceOf[ManualTaskDefinition]
-  } yield task
-
-  def setManualTaskFields(wfId: Int, taskId: Int, values: Map[String, String]): Unit = {
-    findManualTask(wfId, taskId) match {
-      case Some(t) =>
-        val taskDef = t.taskDef
-        val context = t.context
-        taskDef match {
-          case td: ManualTaskDefinition => values.foreach({case (k, v) => td.setField(k, v)(context)})
-          case _ => throw new UnknownError("Unexpected error.")
-        }
-      case None => throw new IllegalArgumentException("Manual task not found.")
+  def setManualTaskFields(wfId: Int, taskId: Int, values: Map[String, String]): Unit =
+    findWorkflow(wfId) match {
+      case Some(wf) => wf.setManualTaskFields(taskId, values)
+      case None => throw new IllegalArgumentException("Workflow not found.")
     }
-  }
 
-  def getManualTaskFields(wfId: Int, taskId: Int): Seq[ManualTaskDefinition.Field] = {
-    findManualTask(wfId, taskId) match {
-      case Some(t) => t.taskDef match {
-        case td: ManualTaskDefinition => td.fieldsMap.values.toSeq
-        case _ => throw new UnknownError("Unexpected error.")
-      }
-      case None => throw new IllegalArgumentException("Manual task not found.")
+  def getManualTaskFields(wfId: Int, taskId: Int): Seq[ManualTaskDefinition.Field] =
+    findWorkflow(wfId) match {
+      case Some(wf) => wf.getManualTaskFields(taskId)
+      case None => throw new IllegalArgumentException("Workflow not found.")
     }
-  }
 }
 

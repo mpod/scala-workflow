@@ -20,7 +20,7 @@ class EngineActor extends Actor {
   def uninitialized: Receive = {
     case IdAllocatorActorRef(ref) =>
       idGenerator = new ActorBasedIdGenerator(ref)
-      engine = new Engine()
+      engine = new Engine(idGenerator)
       context.become(initialized)
       context.system.scheduler.scheduleOnce(1 second, self, ExecuteRound)
     case _ =>

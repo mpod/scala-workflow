@@ -5,7 +5,7 @@ import engine.IdGenerator.SimpleIdGenerator
 object Workflow {
   def main(args: Array[String]): Unit = {
     implicit val idGen = SimpleIdGenerator
-    val engine = new Engine()
+    val engine = new Engine(idGen)
     val wf = engine.startWorkflow(ExampleWorkflow, "Label")
     var i = 1
 

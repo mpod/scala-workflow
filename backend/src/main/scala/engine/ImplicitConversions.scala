@@ -28,14 +28,14 @@ object ImplicitConversions {
 
   implicit def toTaskView(task: Task): TaskViewBase = task.taskDef match {
     case taskDef: ManualTaskDefinition =>
-      implicit val context = task.context
+      implicit val t: Task = task
       ManualTaskView(task.id, task.state.toString, task.taskDef.name, taskDef.fields map toFieldView)
     case taskDef: SubWorkflowTaskDefinition =>
-      SubWorkflowTaskView(task.id, task.state.toString, task.taskDef.name, taskDef.subWorkflow(task.context))
+      SubWorkflowTaskView(task.id, task.state.toString, task.taskDef.name, taskDef.subWorkflow(task))
     case _ => TaskView(task.id, task.state.toString, task.taskDef.name)
   }
 
-  implicit def toFieldView(field: ManualTaskDefinition.Field)(implicit context: TaskContext): ManualTaskFieldViewBase = field match {
+  implicit def toFieldView(field: ManualTaskDefinition.Field)(implicit task: Task): ManualTaskFieldViewBase = field match {
     case f: ManualTaskDefinition.IntField => ManualTaskIntFieldView(f.name, f.label, f.value)
     case f: ManualTaskDefinition.StringField => ManualTaskStringFieldView(f.name, f.label, f.value)
     case _ => throw new UnsupportedOperationException("Unsupported field type.")

@@ -5,10 +5,7 @@ import engine.Task.{TaskContext, TaskState, TreeNode}
 
 object Task {
 
-  class TaskContext(val task: Task) {
-    def workflow = task.workflow
-    def engine = workflow.engine
-  }
+  case class TaskContext(engine: Engine, workflow: Workflow, task: Task)
 
   object TaskState extends Enumeration {
     val New, Done, Running = Value
@@ -38,23 +35,21 @@ object Task {
 }
 
 
-final class Task(val taskDef: TaskDefinition, val workflow: Workflow)(implicit idGen: IdGenerator)
-  extends TreeNode[Task] with Cache with LazyLogging {
+final class Task(val id: Int, val taskDef: TaskDefinition, wf: Workflow) extends TreeNode[Task] with Cache with LazyLogging {
 
   private var _state: TaskState.Value = TaskState.New
-  val id = idGen.nextId
-  private val _context = new TaskContext(this)
-
-  implicit def context = _context
 
   def state = _state
 
-  def value = this
+  def workflow: Workflow = wf
+
+  def value: Task = this
 
   logger.debug("Created task \"%s\" with id %d".format(this, id))
 
-  def execute: Option[ActionResult] = {
+  def execute(implicit engine: Engine): Option[ActionResult] = {
     _state = TaskState.Running
+    val context = TaskContext(engine, workflow, this)
     val actionResult: Option[ActionResult] = taskDef.action(context)
     if (actionResult.isDefined) {
       logger.debug("Executed task \"%s\" with id %d".format(taskDef.name, id))
@@ -64,6 +59,7 @@ final class Task(val taskDef: TaskDefinition, val workflow: Workflow)(implicit i
   }
 
   def isExecuted: Boolean = Set(TaskState.Done) contains _state
+
   override def toString = taskDef.name
 
 }
