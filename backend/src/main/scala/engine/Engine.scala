@@ -8,7 +8,7 @@ class Engine(idGen: IdGenerator) {
 
   implicit private val _engine: Engine = this
 
-  def workflowDefinitions: Seq[WorkflowDefinition] = List(RandomWorkflow, ExampleWorkflow, Demo)
+  def workflowDefinitions: Seq[WorkflowDefinition] = List(Demo, ExampleWorkflow, RandomWorkflow)
 
   def workflows: Seq[Workflow] = _workflows filter {_.parentWorkflow.isEmpty}
 
