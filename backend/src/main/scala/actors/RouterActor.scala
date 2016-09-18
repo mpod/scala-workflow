@@ -22,7 +22,7 @@ class RouterActor extends Actor {
   def hashMapping: ConsistentHashMapping = {
     case CreateWorkflowExtended(_, _, wfId) => wfId
     case GetWorkflowDefinitions => Random.nextInt()
-    case ExecuteManualTask(wfId, _, _) => wfId
+    case ExecuteManualTask(wfRootId, _, _, _) => wfRootId
   }
 
   var router = {

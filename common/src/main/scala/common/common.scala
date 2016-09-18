@@ -82,6 +82,6 @@ object PublicActorMessages {
   case object GetWorkflows
   case class Workflows(wfViews: Seq[WorkflowView])
   case class StartWorkflow(wfDefName: String, label: String)
-  case class ExecuteManualTask(wfId: Int, taskId: Int, fieldValues: Map[String, String])
+  case class ExecuteManualTask(wfRootId: Int, wfId: Int, taskId: Int, fieldValues: Map[String, String])
   case class Error(message: String)
 }

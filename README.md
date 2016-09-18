@@ -32,11 +32,12 @@ Go to [localhost:9000](http://localhost:9000) and start few workflows.
 
 ## Example ##
 
-Workflows are graphs that consist of activities and transitions between them.
+Workflows are graphs that consist of activities and transitions between them. Following graph presents some of
+the workflow engine features.
 
 <img src="https://raw.github.com/mpod/scala-workflow/master/frontend/public/images/demo.png"/>
 
-Here is implementation of above graph in format suitable for workflow engine.
+Here is implementation of above graph in format suitable for execution in workflow engine.
 
 ```scala
 object Demo extends WorkflowDefinition {

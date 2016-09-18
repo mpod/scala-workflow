@@ -10,8 +10,9 @@ import akka.util.Timeout
 import spray.json._
 import common.PublicActorMessages._
 import common.Views.ViewsJsonProtocol._
-import common.Views.{ManualTaskView, TaskViewBase, WorkflowView}
+import common.Views.{ManualTaskView, SubWorkflowTaskView, TaskViewBase, WorkflowView}
 import play.api.data.Form
+
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -38,9 +39,10 @@ class Application @Inject() (webJarAssets: WebJarAssets, system: ActorSystem)  e
     val actorRef = system.actorSelection(actorPath)
     (actorRef ? GetWorkflows).mapTo[Workflows].map({
       case Workflows(workflows) =>
-        workflows.find(wf => wf.id == wfId) match {
-          case Some(wf: WorkflowView) => Ok(views.html.workflow(wf, webJarAssets))
-          case None => InternalServerError("Workflow not found.")
+        val wfPath = findWorkflowPath(wfId, workflows.toList)
+        wfPath match {
+          case wf :: wfs => Ok(views.html.workflow(wf, webJarAssets))
+          case List() => InternalServerError("Workflow not found.")
         }
     })
   }
@@ -48,14 +50,34 @@ class Application @Inject() (webJarAssets: WebJarAssets, system: ActorSystem)  e
   def task(wfId: Int, taskId: Int) = Action.async { implicit request =>
     (system.actorSelection(actorPath) ? GetWorkflows).mapTo[Workflows].map({
       case Workflows(workflows) =>
-        val wf = workflows find {_.id == wfId}
-        val task = wf flatMap {_.tasks find {_.id == taskId}}
+        val wfPath = findWorkflowPath(wfId, workflows.toList)
+        val task = wfPath.headOption flatMap {_.tasks find {_.id == taskId}}
 
         task match {
-          case Some(t: ManualTaskView) => Ok(views.html.task(wf.get, t, t.state == "Done", webJarAssets))
+          case Some(t: ManualTaskView) => Ok(views.html.task(wfPath, t, t.state == "Done", webJarAssets))
           case None => InternalServerError("Task not found.")
         }
     })
+  }
+
+  def findWorkflowPath(wfId: Int, workflows: List[WorkflowView]): List[WorkflowView] = {
+    (List.empty[WorkflowView] /: workflows) {(z, wf) =>
+      if (wf.id == wfId)
+        List(wf)
+      else {
+        z match {
+          case List() =>
+            val subWorkflows = wf.tasks collect { case t: SubWorkflowTaskView if t.subwf.isDefined => t.subwf.get }
+            val wfPath = findWorkflowPath(wfId, subWorkflows.toList)
+            if (wfPath.isEmpty)
+              List()
+            else
+              wfPath ::: List(wf)
+          case _ =>
+            z
+        }
+      }
+    }
   }
 
   def createWorkflow() = Action.async { implicit request =>
@@ -74,23 +96,13 @@ class Application @Inject() (webJarAssets: WebJarAssets, system: ActorSystem)  e
     )
   }
 
-  def executeManualTask(wfId: Int, taskId: Int) = Action.async { implicit request =>
-    def findTask(workflows: Seq[WorkflowView], wfId: Int, taskId: Int): TaskViewBase = {
-      workflows find {_.id == wfId} flatMap {_.tasks find {_.id == taskId}} get
-    }
+  def executeManualTask(wfRootId: Int, wfId: Int, taskId: Int) = Action.async { implicit request =>
     val actor = system.actorSelection(actorPath)
+    val fieldValues = request.body.asFormUrlEncoded.get.map({ case (k, v) => (k, v.head) })
 
-    (actor ? GetWorkflows).map({
-      case Workflows(workflows) => findTask(workflows, wfId, taskId)
-    }).flatMap({
-      case t: ManualTaskView =>
-        val fieldValues = request.body.asFormUrlEncoded.get.map({case (k, v) => (k, v.head)})
-        actor ? ExecuteManualTask(wfId, taskId, fieldValues)
-    }).map({
-      case Workflows(_) => Redirect(routes.Application.workflow(wfId)).flashing("success" -> "Task executed successfully!")
-      case Error(message) => Redirect(routes.Application.task(wfId, taskId)).flashing("error" -> s"An exception occurred: $message")
-    }).fallbackTo(Future{
-      Redirect(routes.Application.workflow(wfId)).flashing("error" -> "Exception while executing a task.")
+    (actor ? ExecuteManualTask(wfRootId, wfId, taskId, fieldValues)).map({
+      case Workflows(_) => Redirect(routes.Application.workflow(wfRootId)).flashing("success" -> "Task executed successfully!")
+      case Error(message) => Redirect(routes.Application.task(wfRootId, taskId)).flashing("error" -> s"An exception occurred: $message")
     })
   }
 

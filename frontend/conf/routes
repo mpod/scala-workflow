@@ -1,11 +1,11 @@
-GET /                                controllers.Application.index
-GET /workflow/:wfId                  controllers.Application.workflow(wfId: Int)
-GET /workflow/:wfId/task/:taskId     controllers.Application.task(wfId: Int, taskId: Int)
-GET /json                            controllers.Application.json
+GET /                                          controllers.Application.index
+GET /workflow/:wfId                            controllers.Application.workflow(wfId: Int)
+GET /workflow/:wfId/task/:taskId               controllers.Application.task(wfId: Int, taskId: Int)
+GET /json                                      controllers.Application.json
 
-POST /workflow                       controllers.Application.createWorkflow
-POST /workflow/:wfId/task/:taskId    controllers.Application.executeManualTask(wfId: Int, taskId: Int)
+POST /workflow                                 controllers.Application.createWorkflow
+POST /workflow/:wfRootId/:wfId/task/:taskId    controllers.Application.executeManualTask(wfRootId: Int, wfId: Int, taskId: Int)
 
 # Map static resources from the /public folder to the /assets URL path
-GET /assets/*file                    controllers.Assets.at(path="/public", file)
-GET /webjars/*file                   controllers.WebJarAssets.at(file)
+GET /assets/*file                              controllers.Assets.at(path="/public", file)
+GET /webjars/*file                             controllers.WebJarAssets.at(file)

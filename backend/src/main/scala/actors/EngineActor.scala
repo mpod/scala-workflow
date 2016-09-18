@@ -44,7 +44,7 @@ class EngineActor extends Actor {
       engine.executeRound
       context.parent ! Workflows(engine.workflows)
       context.system.scheduler.scheduleOnce(1 second, self, ExecuteRound)
-    case ExecuteManualTask(wfId, taskId, fieldValues) =>
+    case ExecuteManualTask(wfRootId, wfId, taskId, fieldValues) =>
       try {
         engine.setManualTaskFields(wfId, taskId, fieldValues)
         context.parent ! Workflows(engine.workflows)

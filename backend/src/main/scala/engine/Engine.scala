@@ -37,7 +37,7 @@ class Engine(idGen: IdGenerator) {
     wf
   }
 
-  def findWorkflow(wfId: Int): Option[Workflow] = workflows find (_.id == wfId)
+  def findWorkflow(wfId: Int): Option[Workflow] = _workflows find (_.id == wfId)
 
   def setManualTaskFields(wfId: Int, taskId: Int, values: Map[String, String]): Unit =
     findWorkflow(wfId) match {
