@@ -2,7 +2,7 @@ digraph graph_name {
   graph [
     fontsize = 10,
     overlap = false,
-    ratio = 0.85,
+    ratio = 1.0,
   ];
 
   node [
