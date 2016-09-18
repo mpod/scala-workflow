@@ -4,11 +4,8 @@ import engine.ActionResult.{JoinIsWaiting, No, Ok, Yes}
 import engine.Task.TaskContext
 
 abstract class TaskDefinition {
-
   def action(implicit context: TaskContext): Option[ActionResult]
-
   def name: String
-
 }
 
 object TaskDefinition {
@@ -24,12 +21,11 @@ object TaskDefinition {
 
 
   class SubWorkflowTaskDefinition(wfDef: WorkflowDefinition) extends TaskDefinition {
-
     private val key = "SubflowTaskDefinition_%d".format(this.hashCode())
 
     def subWorkflow(task: Task): Option[Workflow] = task.get[Workflow](key)
 
-    override def action(implicit context: TaskContext): Option[ActionResult] ={
+    override def action(implicit context: TaskContext): Option[ActionResult] =
       subWorkflow(context.task) orElse {
         val wf: Workflow = context.engine.startWorkflow(wfDef, "SubWorkflow", context.workflow)
         context.task.put(key, wf)
@@ -37,14 +33,12 @@ object TaskDefinition {
       } flatMap {
         wf => if (wf.endExecuted) Some(Ok) else None
       }
-    }
 
     override def name: String = "SubWorkflow[%s]".format(wfDef.name)
   }
 
 
   class BranchTaskDefinition(func: (TaskContext) => Boolean) extends TaskDefinition {
-
     override def action(implicit context: TaskContext): Option[ActionResult] =
       if (func(context))
         Some(Yes)
@@ -52,21 +46,16 @@ object TaskDefinition {
         Some(No)
 
     override def name: String = "Branch"
-
   }
 
 
   class SplitTaskDefinition extends TaskDefinition {
-
     override def action(implicit context: TaskContext): Option[ActionResult] = Some(Ok)
-
     override def name: String = "Split"
-
   }
 
 
   class JoinTaskDefinition(val waitFor: Set[TaskDefinition]) extends TaskDefinition {
-
     private val key = "JoinTaskDefinition_%d".format(this.hashCode())
 
     override def action(implicit context: TaskContext): Option[ActionResult] = {
@@ -81,25 +70,18 @@ object TaskDefinition {
     }
 
     override def name: String = "Join"
-
   }
 
 
   object StartTaskDefinition extends TaskDefinition {
-
     override def action(implicit context: TaskContext): Option[ActionResult] = Option(Ok)
-
     override def name: String = "Start"
-
   }
 
 
   object EndTaskDefinition extends TaskDefinition {
-
     override def action(implicit context: TaskContext): Option[ActionResult] = Option(Ok)
-
     override def name: String = "End"
-
   }
 
 }

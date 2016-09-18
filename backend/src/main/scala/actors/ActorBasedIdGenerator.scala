@@ -26,13 +26,12 @@ class ActorBasedIdGenerator(allocator: ActorRef) extends IdGenerator {
     f
   }
 
-  def _allocate(): Unit = {
+  def _allocate(): Unit =
     if (!allocation.isCompleted) {
       Await.ready(allocation, 10 seconds)
     } else {
       allocation = _createAllocation()
     }
-  }
 
   override def nextId: Int = {
     if (ids.isEmpty) _allocate()
@@ -49,7 +48,7 @@ class ActorBasedIdGenerator(allocator: ActorRef) extends IdGenerator {
     id
   }
 
-  def forceNextId(id: Int) = forcedNextId match {
+  def forceNextId(id: Int): Unit = forcedNextId match {
     case None =>
       forcedNextId = Some(id)
     case Some(_) =>

@@ -12,7 +12,7 @@ import engine.ImplicitConversions._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class EngineActor extends Actor {
-  implicit var idGenerator: ActorBasedIdGenerator = _
+  var idGenerator: ActorBasedIdGenerator = _
   var engine: Engine = _
 
   def receive = uninitialized

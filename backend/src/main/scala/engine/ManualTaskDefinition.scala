@@ -6,11 +6,9 @@ import engine.Task.TaskContext
 object ManualTaskDefinition {
 
   abstract class Field {
-
     type ValueType
 
     val label: String
-
     val name: String
 
     def value_=(value: ValueType)(implicit task: Task) = {
