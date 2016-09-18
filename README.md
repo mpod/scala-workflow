@@ -32,7 +32,7 @@ Go to [localhost:9000](http://localhost:9000) and start few workflows.
 
 ## Example ##
 
-<img src="https://raw.github.com/mpod/scala-workflow/master/frontent/public/images/demo.png"/>
+<img src="https://raw.github.com/mpod/scala-workflow/master/frontend/public/images/demo.png"/>
 
 ```scala
 object Demo extends WorkflowDefinition {
