@@ -1,6 +1,6 @@
 digraph graph_name {
   graph [
-    fontsize = 12,
+    fontsize = 10,
     overlap = false,
     ratio = 1.075,
   ];
