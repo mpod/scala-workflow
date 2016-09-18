@@ -55,7 +55,7 @@ object TaskDefinition {
   }
 
 
-  class JoinTaskDefinition(val waitFor: Set[TaskDefinition]) extends TaskDefinition {
+  class JoinTaskDefinition(val waitFor: Set[TaskDefinition], val waitOnlyForFirst: Boolean = false) extends TaskDefinition {
     private val key = "JoinTaskDefinition_%d".format(this.hashCode())
 
     override def action(implicit context: TaskContext): Option[ActionResult] = {
@@ -63,7 +63,9 @@ object TaskDefinition {
       val parents = context.workflow.get[Set[TaskDefinition]](key).map(_ + parentDef).getOrElse(Set(parentDef))
 
       context.workflow.put(key, parents)
-      if (waitFor == parents)
+      if (!waitOnlyForFirst && waitFor == parents)
+        Some(Ok)
+      else if (waitOnlyForFirst && waitFor.intersect(parents).nonEmpty)
         Some(Ok)
       else
         Some(JoinIsWaiting)
