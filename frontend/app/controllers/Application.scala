@@ -10,7 +10,7 @@ import akka.util.Timeout
 import spray.json._
 import common.PublicActorMessages._
 import common.Views.ViewsJsonProtocol._
-import common.Views.{ManualTaskView, SubWorkflowTaskView, TaskViewBase, WorkflowView}
+import common.Views.{ManualTaskView, SubWorkflowTaskView, WorkflowView}
 import play.api.data.Form
 
 import scala.concurrent.Future
@@ -32,7 +32,7 @@ class Application @Inject() (webJarAssets: WebJarAssets, system: ActorSystem)  e
     for {
       wfs <- (actorRef ? GetWorkflows).mapTo[Workflows]
       wfDefs <- (actorRef ? GetWorkflowDefinitions).mapTo[WorkflowDefinitions]
-    } yield Ok(views.html.index(wfs.wfViews, wfDefs.wfDefNames, webJarAssets))
+    } yield Ok(views.html.index(wfs.wfViews.sortWith(_.id > _.id), wfDefs.wfDefNames, webJarAssets))
   }
 
   def workflow(wfId: Int) = Action.async { implicit request =>
