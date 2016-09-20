@@ -33,7 +33,7 @@ Go to [localhost:9000](http://localhost:9000) and start few workflows.
 ## Example ##
 
 Workflows are actually graphs that consist of activities and transitions between them. Following graph shows a workflow
-with two manual tasks that are created on two parallel branches. Workflow contains conditional activity that drives
+with two parallel branches. Every branch contains a manual task. One branch contains conditional activity that drives
 execution according to data entered in manual task. Subflow activity creates and executes another instance of the same
 workflow. Join nodes merge branches into one.
 
@@ -70,3 +70,5 @@ object Demo extends WorkflowDefinition {
 }
 ```
 
+To add new workflow definition to the list of available workflow definitions extend variable 
+`availableWorkflowDefinitions` in file `backend/src/main/scala/definitions/package.scala`.

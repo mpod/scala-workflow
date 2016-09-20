@@ -1,14 +1,12 @@
 package engine
 
-import definitions.{Demo, ExampleWorkflow, RandomWorkflow}
-
 class Engine(idGen: IdGenerator) {
 
   private var _workflows: List[Workflow] = List.empty[Workflow]
 
   implicit private val _engine: Engine = this
 
-  def workflowDefinitions: Seq[WorkflowDefinition] = List(Demo, ExampleWorkflow, RandomWorkflow)
+  def workflowDefinitions: Seq[WorkflowDefinition] = definitions.availableWorkflowDefinitions
 
   def workflows: Seq[Workflow] = _workflows filter {_.parentWorkflow.isEmpty}
 
