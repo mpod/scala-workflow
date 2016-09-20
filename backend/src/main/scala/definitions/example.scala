@@ -28,7 +28,6 @@ object ExampleWorkflow extends WorkflowDefinition {
     IntField("Simple Int field", "intfield")
   ))
   val branch = new BranchTaskDefinition(context => new Random().nextBoolean)
-  val split = new SplitTaskDefinition()
   val wait2 = new WaitTaskDefinition(2)
   val wait3 = new WaitTaskDefinition(3)
   val join = new JoinTaskDefinition(Set(wait2, wait3))
@@ -46,10 +45,9 @@ object ExampleWorkflow extends WorkflowDefinition {
     (StartTaskDefinition, Ok) -> List(man),
     (man, Ok) -> List(branch),
     (branch, Yes) -> List(proc1),
-    (proc1, Ok) -> List(split),
+    (proc1, Ok) -> List(wait2, wait3),
     (branch, No) -> List(subWf),
     (subWf, Ok) -> List(EndTaskDefinition),
-    (split, Ok) -> List(wait2, wait3),
     (wait2, Ok) -> List(join),
     (wait3, Ok) -> List(join),
     (join, Ok) -> List(proc2),

@@ -19,7 +19,6 @@ object TaskDefinition {
     override def name: String = "Process"
   }
 
-
   class SubWorkflowTaskDefinition(wfDef: WorkflowDefinition) extends TaskDefinition {
     private val key = "SubflowTaskDefinition_%d".format(this.hashCode())
 
@@ -37,7 +36,6 @@ object TaskDefinition {
     override def name: String = "SubWorkflow[%s]".format(wfDef.name)
   }
 
-
   class BranchTaskDefinition(func: (TaskContext) => Boolean) extends TaskDefinition {
     override def action(implicit context: TaskContext): Option[ActionResult] =
       if (func(context))
@@ -47,13 +45,6 @@ object TaskDefinition {
 
     override def name: String = "Branch"
   }
-
-
-  class SplitTaskDefinition extends TaskDefinition {
-    override def action(implicit context: TaskContext): Option[ActionResult] = Some(Ok)
-    override def name: String = "Split"
-  }
-
 
   class JoinTaskDefinition(val waitFor: Set[TaskDefinition], val waitOnlyForFirst: Boolean = false) extends TaskDefinition {
     private val key = "JoinTaskDefinition_%d".format(this.hashCode())
@@ -74,16 +65,13 @@ object TaskDefinition {
     override def name: String = "Join"
   }
 
-
   object StartTaskDefinition extends TaskDefinition {
     override def action(implicit context: TaskContext): Option[ActionResult] = Option(Ok)
     override def name: String = "Start"
   }
 
-
   object EndTaskDefinition extends TaskDefinition {
     override def action(implicit context: TaskContext): Option[ActionResult] = Option(Ok)
     override def name: String = "End"
   }
-
 }
