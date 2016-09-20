@@ -1,7 +1,6 @@
 package engine
 
 trait Cache {
-
   private var _cache: Map[String, Any] = Map()
 
   def put[T](name: String, value: T) = _cache += (name -> value)

@@ -41,21 +41,23 @@ class Application @Inject() (webJarAssets: WebJarAssets, system: ActorSystem)  e
       case Workflows(workflows) =>
         val wfPath = findWorkflowPath(wfId, workflows.toList)
         wfPath match {
-          case wf :: wfs => Ok(views.html.workflow(wf, webJarAssets))
+          case wf :: wfs => Ok(views.html.workflow(wfPath.last, wfPath.last.state == "Finished", webJarAssets))
           case List() => InternalServerError("Workflow not found.")
         }
     })
   }
 
-  def task(wfId: Int, taskId: Int) = Action.async { implicit request =>
+  def task(wfRootId: Int, wfId: Int, taskId: Int) = Action.async { implicit request =>
     (system.actorSelection(actorPath) ? GetWorkflows).mapTo[Workflows].map({
       case Workflows(workflows) =>
         val wfPath = findWorkflowPath(wfId, workflows.toList)
-        val task = wfPath.headOption flatMap {_.tasks find {_.id == taskId}}
+        val task = wfPath.lastOption flatMap {_.tasks find {_.id == taskId}}
 
         task match {
-          case Some(t: ManualTaskView) => Ok(views.html.task(wfPath, t, t.state == "Done", webJarAssets))
-          case None => InternalServerError("Task not found.")
+          case Some(t: ManualTaskView) if wfPath.head.id == wfRootId =>
+            Ok(views.html.task(wfPath.head, wfPath.last, t, t.state == "Done", webJarAssets))
+          case _ =>
+            InternalServerError("Task not found.")
         }
     })
   }
@@ -64,19 +66,20 @@ class Application @Inject() (webJarAssets: WebJarAssets, system: ActorSystem)  e
     (List.empty[WorkflowView] /: workflows) {(z, wf) =>
       if (wf.id == wfId)
         List(wf)
-      else {
+      else
         z match {
           case List() =>
             val subWorkflows = wf.tasks collect { case t: SubWorkflowTaskView if t.subwf.isDefined => t.subwf.get }
             val wfPath = findWorkflowPath(wfId, subWorkflows.toList)
-            if (wfPath.isEmpty)
-              List()
-            else
-              wfPath ::: List(wf)
+            wfPath match {
+              case List() =>
+                List()
+              case _ =>
+                wf :: wfPath
+            }
           case _ =>
             z
         }
-      }
     }
   }
 
@@ -102,7 +105,7 @@ class Application @Inject() (webJarAssets: WebJarAssets, system: ActorSystem)  e
 
     (actor ? ExecuteManualTask(wfRootId, wfId, taskId, fieldValues)).map({
       case Workflows(_) => Redirect(routes.Application.workflow(wfRootId)).flashing("success" -> "Task executed successfully!")
-      case Error(message) => Redirect(routes.Application.task(wfRootId, taskId)).flashing("error" -> s"An exception occurred: $message")
+      case Error(message) => Redirect(routes.Application.task(wfRootId, wfId, taskId)).flashing("error" -> s"An exception occurred: $message")
     })
   }
 

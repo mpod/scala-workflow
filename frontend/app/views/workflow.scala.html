@@ -1,8 +1,11 @@
 @import common.Views._
-@(wf: WorkflowView, webJarAssets: WebJarAssets)(implicit flash: Flash)
+@(wf: WorkflowView, isDone: Boolean, webJarAssets: WebJarAssets)(implicit flash: Flash)
 @main(webJarAssets)(breadcrumbs(wf.id))(flash) {
     <blockquote>
-        <p>Workflow: @wf.name (#@wf.id)</p>
+        <p>
+            Workflow: @wf.name (#@wf.id)
+            @if(isDone){<br/> Executed!}
+        </p>
     </blockquote>
     <div class="panel panel-default">
         <div class="panel-heading">
@@ -18,24 +21,27 @@
             </thead>
             <tbody>
             @for(task <- wf.tasks) {
-            @displayTask(task, wf.id, "")
+            @displayTask(task, wf.id, wf.id, "")
             }
             </tbody>
         </table>
     </div>
+    @if(!isDone){
+    <small>Please refresh the page to get the latest workflow state.</small>
+    }
 }
 
-@displayTask(task: TaskViewBase, wfId: Int, prefix: String) = {
+@displayTask(task: TaskViewBase, wfRootId: Int, wfId: Int, prefix: String) = {
     @if(task.isInstanceOf[SubWorkflowTaskView]) {
         @for(t <- task.asInstanceOf[SubWorkflowTaskView].subwf.get.tasks) {
-            @displayTask(t, task.asInstanceOf[SubWorkflowTaskView].subwf.get.id, task.defName)
+            @displayTask(t, wfRootId, task.asInstanceOf[SubWorkflowTaskView].subwf.get.id, task.defName)
         }
     }
     <tr>
         <th scope="row" style="text-align: center;">@task.id</th>
         <td>
             @task match {
-            case t: ManualTaskView => { <a href="@routes.Application.task(wfId, task.id)">@prefix @task.defName</a> }
+            case t: ManualTaskView => { <a href="@routes.Application.task(wfRootId, wfId, task.id)">@prefix @task.defName</a> }
             case t: SubWorkflowTaskView => { @prefix @task.defName }
             case t: TaskView => { @prefix @task.defName }
             }

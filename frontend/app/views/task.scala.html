@@ -1,11 +1,14 @@
 @import common.Views._
-@(wfPath: List[WorkflowView], task: ManualTaskView, isDone: Boolean, webJarAssets: WebJarAssets)(implicit flash: Flash)
-@main(webJarAssets)(breadcrumbs(wfPath.last.id, task.id))(flash) {
+@(wfRoot: WorkflowView, wf: WorkflowView, task: ManualTaskView, isDone: Boolean, webJarAssets: WebJarAssets)(implicit flash: Flash)
+@main(webJarAssets)(breadcrumbs(wf.id, task.id))(flash) {
 <blockquote>
     <p>
-        Workflow: @wfPath.last.name (#@wfPath.last.id)<br/>
-        Task: @task.defName (#@task.id) @if(isDone){<br/>
-        Executed!}
+        @if(wfRoot.id != wf.id){
+        Root workflow: @wfRoot.name (#@wfRoot.id)<br/>
+        }
+        Workflow: @wf.name (#@wf.id)<br/>
+        Task: @task.defName (#@task.id)
+        @if(isDone){<br/> Executed!}
     </p>
 </blockquote>
 <div class="panel panel-default">
@@ -15,7 +18,7 @@
         </h3>
     </div>
     <div class="panel-body">
-        <form action="@routes.Application.executeManualTask(wfPath.last.id, wfPath.head.id, task.id)" method="post">
+        <form action="@routes.Application.executeManualTask(wfRoot.id, wf.id, task.id)" method="post">
             @for((f, i) <- task.fields.zipWithIndex){
             <div class="row">
                 <div class="form-group col-md-8">

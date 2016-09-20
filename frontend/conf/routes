@@ -1,6 +1,6 @@
 GET /                                          controllers.Application.index
 GET /workflow/:wfId                            controllers.Application.workflow(wfId: Int)
-GET /workflow/:wfId/task/:taskId               controllers.Application.task(wfId: Int, taskId: Int)
+GET /workflow/:wfRoot/:wfId/task/:taskId       controllers.Application.task(wfRoot: Int, wfId: Int, taskId: Int)
 GET /json                                      controllers.Application.json
 
 POST /workflow                                 controllers.Application.createWorkflow
