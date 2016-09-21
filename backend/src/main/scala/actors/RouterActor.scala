@@ -15,7 +15,7 @@ import akka.pattern.ask
 import scala.concurrent.Future
 import scala.util.Random
 
-class RouterActor extends Actor {
+class RouterActor extends Actor with akka.actor.ActorLogging {
   implicit val timeout = Timeout(10 seconds)
   var idGenerator: ActorBasedIdGenerator = _
 
@@ -60,7 +60,7 @@ class RouterActor extends Actor {
     case m: ExecuteManualTask =>
       router.route(m, sender())
     case msg: Error =>
-      /* TODO: Log error message */
+      log.error("Received error message: {}", msg.message)
     case _ =>
       sender() ! Error("Unknown message!")
   }

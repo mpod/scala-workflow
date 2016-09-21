@@ -9,11 +9,12 @@ import engine._
 import util.Random
 
 class WaitTaskDefinition(n: Int) extends TaskDefinition {
-  /* TODO: Make it immutable */
-  var waitFor = n
+  private val key = "WaitTaskDefinition_%d".format(this.hashCode())
 
   override def action(implicit context: TaskContext): Option[ActionResult] = {
+    var waitFor = context.task.get[Int](key).getOrElse(n)
     waitFor -= 1
+    context.task.put(key, waitFor)
     if (waitFor <= 0)
       Some(Ok)
     else

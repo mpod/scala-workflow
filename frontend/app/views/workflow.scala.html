@@ -33,7 +33,7 @@
 
 @displayTask(task: TaskViewBase, wfRootId: Int, wfId: Int, prefix: String) = {
     @if(task.isInstanceOf[SubWorkflowTaskView]) {
-        @for(t <- task.asInstanceOf[SubWorkflowTaskView].subwf.get.tasks) {
+        @for(t <- task.asInstanceOf[SubWorkflowTaskView].subwf.map(_.tasks).getOrElse(List.empty)) {
             @displayTask(t, wfRootId, task.asInstanceOf[SubWorkflowTaskView].subwf.get.id, task.defName)
         }
     }

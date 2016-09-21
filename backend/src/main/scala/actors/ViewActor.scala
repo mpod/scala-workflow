@@ -9,7 +9,7 @@ object ViewActor {
   def props(index: Int): Props = Props(new ViewActor(index))
 }
 
-class ViewActor(index: Int) extends Actor {
+class ViewActor(index: Int) extends Actor with akka.actor.ActorLogging {
   val engineChild = context.actorOf(Props[EngineActor])
   var wfViews: Seq[WorkflowView] = List.empty
 
@@ -27,7 +27,7 @@ class ViewActor(index: Int) extends Actor {
     case msg: ExecuteManualTask =>
       engineChild forward msg
     case msg: Error =>
-      /* TODO: Log error message */
+      log.error("Received error message: {}", msg.message)
     case _ =>
       sender() ! Error("Unknown message!")
   }

@@ -11,7 +11,7 @@ import engine.ImplicitConversions._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class EngineActor extends Actor {
+class EngineActor extends Actor with akka.actor.ActorLogging {
   var idGenerator: ActorBasedIdGenerator = _
   var engine: Engine = _
 
@@ -54,7 +54,7 @@ class EngineActor extends Actor {
           sender() ! Error(e.getMessage)
       }
     case msg: Error =>
-      /* TODO: Log error message */
+      log.error("Received error message: {}", msg.message)
     case _ =>
       sender() ! Error("Unknown message!")
   }
