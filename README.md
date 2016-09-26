@@ -9,6 +9,7 @@ Experimental workflow engine written in Scala.
 * _Join_ activity for merging branches
 * _Subflow_ activity for workflow compositions
 * _Manual task_ activity for collecting input data
+* Custom activities
 
 ## Getting started ##
 
@@ -28,7 +29,7 @@ In second terminal execute.
 $ sbt frontened/run
 ```
 
-Go to [localhost:9000](http://localhost:9000) and start few workflows.
+Go to [http://localhost:9000](http://localhost:9000) and start few workflows.
 
 ## Example ##
 
@@ -39,7 +40,7 @@ workflow. Join nodes merge branches into one.
 
 <img src="https://raw.github.com/mpod/scala-workflow/master/frontend/public/images/demo.png"/>
 
-Here is implementation of above workflow in format suitable for execution in workflow engine.
+Here is an implementation of above workflow in format suitable for execution in the workflow engine.
 
 ```scala
 object Demo extends WorkflowDefinition {
