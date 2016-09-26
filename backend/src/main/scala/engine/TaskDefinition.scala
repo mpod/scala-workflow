@@ -46,23 +46,40 @@ object TaskDefinition {
     override def name: String = "Branch"
   }
 
-  class JoinTaskDefinition(val waitFor: Set[TaskDefinition], val waitOnlyForFirst: Boolean = false) extends TaskDefinition {
-    private val key = "JoinTaskDefinition_%d".format(this.hashCode())
+  class WaitFirstTaskDefinition(waitFor: TaskDefinition*) extends TaskDefinition {
+    private val key = "WaitFirstTaskDefinition_%d".format(this.hashCode())
+    private val _waitFor = waitFor.toSet
 
     override def action(implicit context: TaskContext): Option[ActionResult] = {
       val parentDef: TaskDefinition = context.task.parent.get.value.taskDef
       val parents = context.workflow.get[Set[TaskDefinition]](key).map(_ + parentDef).getOrElse(Set(parentDef))
 
       context.workflow.put(key, parents)
-      if (!waitOnlyForFirst && waitFor == parents)
-        Some(Ok)
-      else if (waitOnlyForFirst && waitFor.intersect(parents).nonEmpty)
+      if (_waitFor.intersect(parents).nonEmpty)
         Some(Ok)
       else
         Some(JoinIsWaiting)
     }
 
-    override def name: String = "Join"
+    override def name: String = "WaitFirst"
+  }
+
+  class WaitAllTaskDefinition(waitFor: TaskDefinition*) extends TaskDefinition {
+    private val key = "WaitFirstTaskDefinition_%d".format(this.hashCode())
+    private val _waitFor = waitFor.toSet
+
+    override def action(implicit context: TaskContext): Option[ActionResult] = {
+      val parentDef: TaskDefinition = context.task.parent.get.value.taskDef
+      val parents = context.workflow.get[Set[TaskDefinition]](key).map(_ + parentDef).getOrElse(Set(parentDef))
+
+      context.workflow.put(key, parents)
+      if (_waitFor == parents)
+        Some(Ok)
+      else
+        Some(JoinIsWaiting)
+    }
+
+    override def name: String = "WaitAll"
   }
 
   object StartTaskDefinition extends TaskDefinition {

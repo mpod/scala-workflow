@@ -31,7 +31,7 @@ object ExampleWorkflow extends WorkflowDefinition {
   val branch = new BranchTaskDefinition(context => new Random().nextBoolean)
   val wait2 = new WaitTaskDefinition(2)
   val wait3 = new WaitTaskDefinition(3)
-  val join = new JoinTaskDefinition(Set(wait2, wait3))
+  val join = new WaitAllTaskDefinition(wait2, wait3)
   val subWf = new SubWorkflowTaskDefinition(ExampleSubWorkflow)
   val proc1 = new ProcessTaskDefinition(context => {
     val n = 2

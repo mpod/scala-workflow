@@ -16,18 +16,18 @@ object Demo extends WorkflowDefinition {
     context.task.parent.get.value.get[Int]("intfield").get > 100
   })
   val subflow = new SubWorkflowTaskDefinition(Demo)
-  val join1 = new JoinTaskDefinition(Set(subflow, branch), waitOnlyForFirst = true)
-  val join2 = new JoinTaskDefinition(Set(join1, manual2))
+  val wait1 = new WaitFirstTaskDefinition(subflow, branch)
+  val wait2 = new WaitAllTaskDefinition(wait1, manual2)
 
   override val transitions: Map[(TaskDefinition, ActionResult), List[TaskDefinition]] = Map(
     (StartTaskDefinition, Ok) -> List(manual1, manual2),
     (manual1, Ok) -> List(branch),
     (branch, Yes) -> List(subflow),
-    (branch, No) -> List(join1),
-    (subflow, Ok) -> List(join1),
-    (join1, Ok) -> List(join2),
-    (manual2, Ok) -> List(join2),
-    (join2, Ok) -> List(EndTaskDefinition)
+    (branch, No) -> List(wait1),
+    (subflow, Ok) -> List(wait1),
+    (wait1, Ok) -> List(wait2),
+    (manual2, Ok) -> List(wait2),
+    (wait2, Ok) -> List(EndTaskDefinition)
   )
   override val name: String = "Demo"
 }

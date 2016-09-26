@@ -19,17 +19,17 @@ digraph graph_name {
   manual2 [shape = box, label = "manual2\nString input field."];
   branch [shape = box, label = "branch\nIs integer from previous \n task bigger than 100?"];
   subflow [shape = box, label = "subflow\nExecute the same \n workflow recursively."];
-  join1 [shape = box, label = "join1\nWait for any of \n two parent branches."];
-  join2 [shape = box, label = "join2\nWait for both \n parent branches."];
+  wait1 [shape = box, label = "wait1\nWait for any of \n two parent branches."];
+  wait2 [shape = box, label = "wait2\nWait for both \n parent branches."];
   end [shape = circle];
 
   start -> manual1;
   start -> manual2;
   manual1 -> branch;
   branch -> subflow[label = "Yes"];
-  branch -> join1[label = "No"];
-  subflow -> join1;
-  join1 -> join2;
-  manual2 -> join2;
-  join2 -> end;
+  branch -> wait1[label = "No"];
+  subflow -> wait1;
+  wait1 -> wait2;
+  manual2 -> wait2;
+  wait2 -> end;
 }
