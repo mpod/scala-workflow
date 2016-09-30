@@ -6,7 +6,7 @@ Experimental workflow engine written in Scala.
 
 * Built upon Akka and Play
 * Activities can transition into multiple new activities in parallel
-* _Join_ activity for merging branches
+* _Wait_ activity for merging branches
 * _Subflow_ activity for workflow compositions
 * _Manual task_ activity for collecting input data
 * Custom activities
@@ -36,7 +36,7 @@ Go to [http://localhost:9000](http://localhost:9000) and start few workflows.
 Workflows are actually graphs that consist of activities and transitions between them. Following graph shows a workflow
 with two parallel branches. Every branch contains a manual task. One branch contains conditional activity that drives
 execution according to data entered in manual task. Subflow activity creates and executes another instance of the same
-workflow. Join nodes merge branches into one.
+workflow. Wait nodes merge branches into one.
 
 <img src="https://raw.github.com/mpod/scala-workflow/master/frontend/public/images/demo.png"/>
 
